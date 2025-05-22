@@ -53,5 +53,60 @@
         #endregion
         
         Console.WriteLine(IndexFile);
+        IndexFile = IndexFile.Replace("\n", "")
+            .Replace("\t", "")
+            .Replace("\r", "")
+            .Replace("    ", "")
+            .Replace("      ", "");
+        
+        
+        Dictionary<string, string[]> FunctionLibrary = new Dictionary<string, string[]>();
+
+        {
+            string tempBlock = "";
+            string functionName = "";
+            bool blockStarted = false;
+            List<string> InstructionLines = new List<string>();
+
+            for (int i = 0; i < IndexFile.Length; i++)
+            {
+                char currentChar = IndexFile[i];
+
+                switch (currentChar)
+                {
+                    case '.':
+                        tempBlock = "";
+                        break;
+
+                    case '{':
+                        functionName = tempBlock;
+                        tempBlock = "";
+                        break;
+
+                    case ';':
+                        InstructionLines.Add(tempBlock.Trim());
+                        tempBlock = "";
+                        break;
+
+                    case '}':
+                        FunctionLibrary.Add(functionName, InstructionLines.ToArray());
+
+                        tempBlock = "";
+                        functionName = "";
+                        InstructionLines.Clear();
+                        break;
+
+                    default:
+                        tempBlock += currentChar;
+                        break;
+                }
+            }
+        }
+
+        Console.WriteLine(FunctionLibrary.Count);
+        Console.WriteLine(String.Join(", ", FunctionLibrary.Keys));
+        
+        Console.WriteLine(String.Join(" -> ", FunctionLibrary["main"]));
+        
     }
 }
