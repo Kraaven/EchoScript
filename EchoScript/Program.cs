@@ -6,7 +6,7 @@
     private static Dictionary<string, string> GlobalStrings = new();
 
     private static Dictionary<string, float> LocalNumbers = new();
-    private static Dictionary<string, float> LocalStrings = new();
+    private static Dictionary<string, string> LocalStrings = new();
     
     public static void Main(String[] args)
     {
@@ -15,7 +15,7 @@
         string projectFolder = "";
         if (args.Length == 0)
         {
-            Console.WriteLine("Initiating EchoScript Terminal CommandLine");
+            Console.WriteLine("Initiating Birch Terminal CommandLine");
 
             do
             {
@@ -44,20 +44,20 @@
         {
             if (SingleFile)
             {
-                Console.WriteLine("Given path does not point to a valid EchoScript file");
+                Console.WriteLine("Given path does not point to a valid Birch file");
             }
             else
             {
-                Console.WriteLine("Given path does not point to a valid EchoScript Project");
+                Console.WriteLine("Given path does not point to a valid Birch Project");
                 Console.WriteLine("Make sure to provide a Script file or a Directory with Index.br");
             }
 
-            CrashError("Please provide a valid EchoScript file or a Directory with Index.br");
+            CrashError("Please provide a valid Birch file or a Directory with Index.br");
         }
         
         string IndexFile = File.ReadAllText(initFilePath);
         #endregion
-
+        
         #region Function Registration
         
         IndexFile = IndexFile.Replace("\n", "")
@@ -65,9 +65,6 @@
             .Replace("\r", "")
             .Replace("    ", "")
             .Replace("      ", "");
-        
-        
-        
 
         {
             string tempBlock = "";
@@ -170,7 +167,7 @@
                 SplitInstruction.Add(token);
             }
 
-            // Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
+            Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
             FunctionInstructions.Add(SplitInstruction.ToArray());
             index++;
         }
@@ -181,8 +178,34 @@
     public static void CallFunction(string functionName)
     {
         if (!FunctionLibrary.ContainsKey(functionName)) CrashError($"Function {functionName} does not exist");
+        LocalNumbers.Clear();
+        LocalStrings.Clear();
         
-        
+        foreach (var Instruction in FunctionLibrary[functionName])
+        {
+            switch (Instruction[0])
+            {
+                case "num":
+                    if(Instruction.Length != 4) CrashError("Invalid Syntax, multiple arguments");
+                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator");
+                    
+                    if (float.TryParse(Instruction[3], out var numResult)) LocalNumbers.Add(Instruction[1], numResult);
+                    else CrashError("Invalid Syntax, argument must be a number");
+
+                    // Console.WriteLine($"{Instruction[1]} added with value {LocalNumbers[Instruction[1]]}"); 
+                    
+                    continue;
+                case "str":
+                    if(Instruction.Length != 4) CrashError("Invalid Syntax, multiple arguments");
+                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator");
+                    
+                    LocalStrings.Add(Instruction[1], Instruction[3]);
+                    
+                    // Console.WriteLine($"{Instruction[1]} added with value {LocalStrings[Instruction[1]]}");
+
+                    continue;
+            }
+        }
     }
 
     public static void CrashError(string ErrorMsg)

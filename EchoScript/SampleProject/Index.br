@@ -1,13 +1,5 @@
 ﻿.main{
-    hello there;
-    my name is dhruv;
-    i guess this is a bit funny;
-    name = "Dhruv Bhojaraj";
-}
-
-//Testing a comment
-
-.global{
-    YOOOOO we got globals;
-    I guess we kinda set now?;
+    num a = 5;
+    num b = 10;
+    str name = "Dhruv";
 }
