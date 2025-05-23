@@ -119,7 +119,17 @@
         }
         
         #endregion
+
+        #region SystemSetup
         
+        // GlobalNumbers.Add("", 0);
+        GlobalStrings.Add("str-in", "");
+        GlobalStrings.Add("str-out", "");
+        
+        GlobalNumbers.Add("num-in", 0);
+        GlobalNumbers.Add("num-out", 0);
+        
+        #endregion
         CallFunction("main");
     }
 
@@ -193,11 +203,14 @@
                     
                     Console.WriteLine($"Calling function {Instruction[2]}");
                     CallFunction(Instruction[2]);
-                    break;
+                    continue;
                 case "syscall":
                     if(Instruction.Length < 3 || Instruction.Length > 3) CrashError("Invalid Syntax, invalid number of arguments");
                     if(Instruction[1] != ":") CrashError("Invalid Syntax, No : Operator");
-                    break;
+
+                    RunSystemInstruction(Instruction[2]);
+                    
+                    continue;
             }
             
             //Variable Declaration
@@ -228,7 +241,19 @@
                     if(Instruction.Length != 4) CrashError("Invalid Syntax, multiple tokens for string declaration");
                     if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator");
                     
-                    LocalStrings.Add(Instruction[1], Instruction[3]);
+                    
+                    if (GlobalStrings.ContainsKey(Instruction[3]))
+                    {
+                        AssignString( Instruction[3], Instruction,LocalNumbers, LocalStrings, GlobalStrings);
+                    }
+                    else if (LocalStrings.ContainsKey( Instruction[3]))
+                    {
+                        AssignString( Instruction[3], Instruction,LocalNumbers, LocalStrings, LocalStrings);
+                    }
+                    else
+                    {
+                        LocalStrings.Add(Instruction[1], Instruction[3]);
+                    }
                     
                     // Console.WriteLine($"{Instruction[1]} added with value {LocalStrings[Instruction[1]]}");
 
@@ -241,30 +266,96 @@
             
             //Variable Re-assignment
             if(Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete");
-            if (LocalNumbers.ContainsKey(Instruction[0]) && Instruction[1] == "=")
+            
+            string variable = Instruction[0];
+            string operation = Instruction[1];
+
+            if (operation != "=")
             {
-                string[] Expression = new string[Instruction.Length - 2];
-                for (int i = 0; i < Expression.Length; i++)
-                {
-                    Expression[i] = Instruction[i + 2];
-                }
-                
-                if(!LocalNumbers.ContainsKey(Instruction[0])) CrashError("Invalid Syntax, Variable does not exist");
-                
-                LocalNumbers[Instruction[0]] = EvaluateExpression(Expression, LocalNumbers, LocalStrings);
-                
-                // Console.WriteLine($"{Instruction[0]} changed to value {LocalNumbers[Instruction[0]]}");
+                CrashError("Invalid Syntax, instruction is nonsense");
+                return;
             }
-            else if(LocalStrings.ContainsKey(Instruction[0]) && Instruction[1] == "=")
+
+            // Handle numeric assignments
+            if (GlobalNumbers.ContainsKey(variable))
             {
-                if(!LocalStrings.ContainsKey(Instruction[0])) CrashError("Invalid Syntax, Variable does not exist");
-                LocalStrings[Instruction[0]] = Instruction[2];
-                Console.WriteLine($"{Instruction[0]} changed to value {LocalStrings[Instruction[0]]}");
+                AssignNumber(variable, Instruction,LocalNumbers, LocalStrings, GlobalNumbers);
+            }
+            else if (LocalNumbers.ContainsKey(variable))
+            {
+                AssignNumber(variable, Instruction,LocalNumbers, LocalStrings, LocalNumbers);
+            }
+            // Handle string assignments
+            else if (GlobalStrings.ContainsKey(variable))
+            {
+                // Console.WriteLine($"Global Strings contains variable {variable}");
+                AssignString(variable, Instruction,LocalNumbers, LocalStrings, GlobalStrings);
+            }
+            else if (LocalStrings.ContainsKey(variable))
+            {
+                AssignString(variable, Instruction,LocalNumbers, LocalStrings, LocalStrings);
             }
             else
             {
-                CrashError("Invalid Syntax, instruction is nonsense");
+                CrashError("Invalid Syntax, variable does not exist");
             }
+            
+        }
+    }
+
+    static void AssignNumber(string variable, string[] instruction, Dictionary<string, float> LocalNumbers, Dictionary<string, string> LocalStrings,  Dictionary<string, float> targetDict)
+    {
+        if (!targetDict.ContainsKey(variable))
+            CrashError("Invalid Syntax, Variable does not exist");
+
+        var expression = instruction.Skip(2).ToArray();
+        targetDict[variable] = EvaluateExpression(expression, LocalNumbers, LocalStrings);
+    }
+
+    static void AssignString(string variable, string[] instruction, Dictionary<string, float> LocalNumbers, Dictionary<string, string> LocalStrings, Dictionary<string, string> targetDict)
+    {
+        if (!targetDict.ContainsKey(variable))
+            CrashError("Invalid Syntax, Variable does not exist");
+
+        string valueKey = instruction[2];
+
+        if (LocalStrings.ContainsKey(valueKey))
+        {
+            targetDict[variable] = LocalStrings[valueKey];
+        }
+        else if (GlobalStrings.ContainsKey(valueKey))
+        {
+            targetDict[variable] = GlobalStrings[valueKey];
+        }
+        else
+        {
+            targetDict[variable] = valueKey;
+        }
+    }
+
+    private static void RunSystemInstruction(string functionName)
+    {
+        switch (functionName)
+        {
+            case "write": 
+                Console.WriteLine($">> {GlobalStrings["str-in"]}");
+                break;
+            case "read":
+                var input = Console.ReadLine();
+                if (input == null)
+                {
+                    Console.WriteLine($">> Input not valid");
+                    break;
+                }
+                GlobalStrings["str-out"] = input;
+                break;
+            case "toNum":
+                break;
+            case "toString":
+                break;
+            default:
+                CrashError("Invalid Syntax, system function does not exist");
+                break;
             
         }
     }
@@ -324,6 +415,10 @@
                 {
                     throw new ArgumentException("Mismatched parentheses");
                 }
+            }
+            else if (GlobalNumbers.ContainsKey(token))
+            {
+                output.Add(localNumbers[token].ToString());
             }
             else if (localNumbers.ContainsKey(token))
             {

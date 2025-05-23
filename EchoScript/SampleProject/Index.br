@@ -1,9 +1,15 @@
 ﻿.main{
     num a = 5;
-    num b = a + 10;
     call : test;
 }
 
 .test{
-    num x = 5;
+    str-in = "What is your name? :";
+    syscall : write;
+    syscall : read;
+    
+    str-in = "Welcome";
+    syscall : write;
+    str-in = str-out;
+    syscall : write;
 }
