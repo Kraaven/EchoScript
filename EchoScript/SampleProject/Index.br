@@ -1,7 +1,9 @@
 ﻿.main{
     num a = 5;
-    num b = 10;
-    num c = a + b;
-    c = a * b / 2;
-    str name = "Dhruv";
+    num b = a + 10;
+    call : test;
+}
+
+.test{
+    num x = 5;
 }
