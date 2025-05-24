@@ -1,15 +1,29 @@
 ﻿.main{
-    num a = 5;
+    
+    sys-console = "Welcome to the Number calculator";
+    syscall : write;
+    
+    # Comment to test of this works #
     call : test;
 }
 
 .test{
-    str-in = "What is your name? :";
+
+    # take the user input #
+    sys-console = "Give me a number :";
     syscall : write;
     syscall : read;
+    str number = sys-console;
     
-    str-in = "Welcome";
-    syscall : write;
-    str-in = str-out;
+    # convert the input string into a number #
+    STR-i = number;
+    syscall : toNum;
+    num given_number = NUM-i;
+    
+    # square the number and print it #
+    given_number = given_number * given_number;
+    NUM-i = given_number;
+    syscall : toString;
+    sys-console = "The Square of your number is : " + STR-i;
     syscall : write;
 }

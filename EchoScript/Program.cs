@@ -52,7 +52,7 @@
                 Console.WriteLine("Make sure to provide a Script file or a Directory with Index.br");
             }
 
-            CrashError("Please provide a valid Birch file or a Directory with Index.br");
+            CrashError("Please provide a valid Birch file or a Directory with Index.br", new []{"No file loaded for Instruction"});
         }
         
         string IndexFile = File.ReadAllText(initFilePath);
@@ -122,12 +122,17 @@
 
         #region SystemSetup
         
-        // GlobalNumbers.Add("", 0);
-        GlobalStrings.Add("str-in", "");
-        GlobalStrings.Add("str-out", "");
+        GlobalStrings.Add("sys-console", "");
         
-        GlobalNumbers.Add("num-in", 0);
-        GlobalNumbers.Add("num-out", 0);
+        GlobalStrings.Add("STR-i", "");
+        GlobalStrings.Add("STR-x", "");
+        GlobalStrings.Add("STR-c", "");
+        GlobalStrings.Add("STR-l", "");
+        
+        GlobalNumbers.Add("NUM-i", 0);
+        GlobalNumbers.Add("NUM-x", 0);
+        GlobalNumbers.Add("NUM-c", 0);
+        GlobalNumbers.Add("NUM-l", 0);
         
         #endregion
         CallFunction("main");
@@ -137,7 +142,7 @@
     public static void RegisterFunction(string functionName, List<string> functionBlock)
     {
 
-        Console.WriteLine($"Function Name: {functionName}");
+        // Console.WriteLine($"Function Name: {functionName}");
         int index = 0;
         
         List<string[]> FunctionInstructions = new();
@@ -148,6 +153,7 @@
 
             List<string> SplitInstruction = new List<string>();
             bool IsString = false;
+            bool IsComment = false;
             string token = "";
 
             for (int i = 0; i < instruction.Length; i++)
@@ -156,6 +162,17 @@
                 if (c == '"')
                 {
                     IsString = !IsString;
+                    continue;
+                }
+
+                if (c == '#')
+                {
+                    IsComment = !IsComment;
+                    continue;
+                }
+
+                if (IsComment)
+                {
                     continue;
                 }
                 if (char.IsWhiteSpace(c) && !IsString)
@@ -177,7 +194,7 @@
                 SplitInstruction.Add(token);
             }
 
-            Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
+            // Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
             FunctionInstructions.Add(SplitInstruction.ToArray());
             index++;
         }
@@ -187,7 +204,7 @@
 
     public static void CallFunction(string functionName)
     {
-        if (!FunctionLibrary.ContainsKey(functionName)) CrashError($"Function {functionName} does not exist");
+        if (!FunctionLibrary.ContainsKey(functionName)) CrashError($"Function {functionName} does not exist", new []{"None"});
         Dictionary<string, float> LocalNumbers = new();
         Dictionary<string, string> LocalStrings = new();
         
@@ -198,15 +215,15 @@
             switch (Instruction[0])
             {
                 case "call":
-                    if(Instruction.Length < 3 || Instruction.Length > 3) CrashError("Invalid Syntax, invalid number of arguments");
-                    if(Instruction[1] != ":") CrashError("Invalid Syntax, No : Operator");
+                    if(Instruction.Length < 3 || Instruction.Length > 3) CrashError("Invalid Syntax, invalid number of arguments", Instruction);
+                    if(Instruction[1] != ":") CrashError("Invalid Syntax, No : Operator", Instruction);
                     
-                    Console.WriteLine($"Calling function {Instruction[2]}");
+                    // Console.WriteLine($"Calling function {Instruction[2]}");
                     CallFunction(Instruction[2]);
                     continue;
                 case "syscall":
-                    if(Instruction.Length < 3 || Instruction.Length > 3) CrashError("Invalid Syntax, invalid number of arguments");
-                    if(Instruction[1] != ":") CrashError("Invalid Syntax, No : Operator");
+                    if(Instruction.Length < 3 || Instruction.Length > 3) CrashError("Invalid Syntax, invalid number of arguments", Instruction);
+                    if(Instruction[1] != ":") CrashError("Invalid Syntax, No : Operator", Instruction);
 
                     RunSystemInstruction(Instruction[2]);
                     
@@ -217,120 +234,100 @@
             switch (Instruction[0])
             {
                 case "num":
-                    if(Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete");
-                    if(!IsVariableValid(Instruction[1], LocalNumbers, LocalStrings)) CrashError("Invalid Syntax, Not a valid Variable Name");
-                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator");
+                    if(Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
+                    if(!IsVariableFormatValid(Instruction[1])) CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator", Instruction);
                     
-                    // if (float.TryParse(Instruction[3], out var numResult)) LocalNumbers.Add(Instruction[1], numResult);
-                    // else CrashError("Invalid Syntax, argument must be a number");
-
-                    string[] Expression = new string[Instruction.Length - 3];
-                    for (int i = 0; i < Expression.Length; i++)
-                    {
-                        Expression[i] = Instruction[i + 3];
-                    }
-                    
-                    LocalNumbers.Add(Instruction[1], EvaluateExpression(Expression, LocalNumbers, LocalStrings));
-                    // Console.WriteLine(string.Join("|", Expression));
-                    // Console.WriteLine($"{Instruction[1]} added with value {LocalNumbers[Instruction[1]]}"); 
+                    if(ConfirmNumVariable(Instruction[1], LocalNumbers).isvariable) CrashError("Invalid Syntax, variable already defined", Instruction);
+                    else LocalNumbers.Add(Instruction[1], EvaluateExpression(Instruction.Skip(3).ToArray(), LocalNumbers));
                     
                     continue;
                 case "str":
-                    if(Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete");
-                    if(!IsVariableValid(Instruction[1], LocalNumbers, LocalStrings)) CrashError("Invalid Syntax, Not a valid Variable Name");
-                    if(Instruction.Length != 4) CrashError("Invalid Syntax, multiple tokens for string declaration");
-                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator");
+                    if(Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
+                    if(!IsVariableFormatValid(Instruction[1])) CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                    if(Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator", Instruction);
                     
-                    
-                    if (GlobalStrings.ContainsKey(Instruction[3]))
-                    {
-                        AssignString( Instruction[3], Instruction,LocalNumbers, LocalStrings, GlobalStrings);
-                    }
-                    else if (LocalStrings.ContainsKey( Instruction[3]))
-                    {
-                        AssignString( Instruction[3], Instruction,LocalNumbers, LocalStrings, LocalStrings);
-                    }
-                    else
-                    {
-                        LocalStrings.Add(Instruction[1], Instruction[3]);
-                    }
-                    
-                    // Console.WriteLine($"{Instruction[1]} added with value {LocalStrings[Instruction[1]]}");
+                    var affirm = ConfirmStrVariable(Instruction[0], LocalStrings);
+                    if(affirm.isvariable) CrashError("Invalid Syntax, variable already defined", Instruction);
+                    else LocalStrings.Add(Instruction[1], EvaluateStringExpression(Instruction.Skip(3).ToArray(), LocalStrings));
 
                     continue;
                 
                 default:
                     break;
-                
             }
             
             //Variable Re-assignment
-            if(Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete");
+            if(Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete", Instruction);
             
             string variable = Instruction[0];
             string operation = Instruction[1];
 
             if (operation != "=")
             {
-                CrashError("Invalid Syntax, instruction is nonsense");
+                CrashError("Invalid Syntax, instruction is nonsense", Instruction);
                 return;
             }
-
-            // Handle numeric assignments
-            if (GlobalNumbers.ContainsKey(variable))
-            {
-                AssignNumber(variable, Instruction,LocalNumbers, LocalStrings, GlobalNumbers);
-            }
-            else if (LocalNumbers.ContainsKey(variable))
-            {
-                AssignNumber(variable, Instruction,LocalNumbers, LocalStrings, LocalNumbers);
-            }
-            // Handle string assignments
-            else if (GlobalStrings.ContainsKey(variable))
-            {
-                // Console.WriteLine($"Global Strings contains variable {variable}");
-                AssignString(variable, Instruction,LocalNumbers, LocalStrings, GlobalStrings);
-            }
-            else if (LocalStrings.ContainsKey(variable))
-            {
-                AssignString(variable, Instruction,LocalNumbers, LocalStrings, LocalStrings);
-            }
-            else
-            {
-                CrashError("Invalid Syntax, variable does not exist");
-            }
             
+            var strAffirm = ConfirmStrVariable(variable, LocalStrings);
+            var numAffirm = ConfirmNumVariable(variable, LocalNumbers);
+            if (strAffirm.isvariable)
+                strAffirm.varDict[variable] = EvaluateStringExpression(Instruction.Skip(2).ToArray(), LocalStrings);
+            if (numAffirm.isvariable)
+                numAffirm.varDict[variable] = EvaluateExpression(Instruction.Skip(2).ToArray(), LocalNumbers);
+            
+            if(!strAffirm.isvariable && !numAffirm.isvariable) CrashError("Invalid Syntax, Variable does not exist", Instruction);
+
         }
     }
 
-    static void AssignNumber(string variable, string[] instruction, Dictionary<string, float> LocalNumbers, Dictionary<string, string> LocalStrings,  Dictionary<string, float> targetDict)
+    public static (bool isvariable, Dictionary<string, string> varDict) ConfirmStrVariable(string variableName, Dictionary<string, string> localStrings)
     {
-        if (!targetDict.ContainsKey(variable))
-            CrashError("Invalid Syntax, Variable does not exist");
-
-        var expression = instruction.Skip(2).ToArray();
-        targetDict[variable] = EvaluateExpression(expression, LocalNumbers, LocalStrings);
+        if(GlobalStrings.ContainsKey(variableName)) return (true, GlobalStrings);
+        if(localStrings.ContainsKey(variableName)) return (true, localStrings);
+        return (false, null);
+    }
+    
+    public static (bool isvariable, Dictionary<string, float> varDict) ConfirmNumVariable(string variableName, Dictionary<string, float> localNumbers)
+    {
+        if(GlobalNumbers.ContainsKey(variableName)) return (true, GlobalNumbers);
+        if(localNumbers.ContainsKey(variableName)) return (true, localNumbers);
+        return (false, null);
     }
 
-    static void AssignString(string variable, string[] instruction, Dictionary<string, float> LocalNumbers, Dictionary<string, string> LocalStrings, Dictionary<string, string> targetDict)
+    public static string GetStringValue(string token, Dictionary<string, string> localStrings)
     {
-        if (!targetDict.ContainsKey(variable))
-            CrashError("Invalid Syntax, Variable does not exist");
+        var affirm = ConfirmStrVariable(token, localStrings);
+        if(affirm.isvariable) return affirm.varDict[token];
+        return token;
+    }
 
-        string valueKey = instruction[2];
+    public static string EvaluateStringExpression(string[] expression, Dictionary<string, string> localStrings)
+    {
+        // Console.WriteLine($"$Expression : {String.Join("|", expression)}");
+        // if(localStrings.ContainsKey("name")) Console.WriteLine(localStrings["name"]);
+            
+        switch (expression.Length)
+        {
+            case 0:
+                CrashError("Syntax error, Given String Expression is empty", expression);
+                return "";
+            case 1: return GetStringValue(expression[0], localStrings);
+            case >1:
+                if(expression.Length % 2 == 0) CrashError("Invalid Syntax, wrong string expression", expression);
+                for (int i = 0; i < expression.Length; i++) 
+                    if (i % 2 == 1 && expression[i] !="+") CrashError("Invalid Syntax, wrong string expression", expression);
+                
+                string result = "";
+                for (int i = 0; i < expression.Length; i += 2)
+                {
+                    result += GetStringValue(expression[i], localStrings);
+                }
 
-        if (LocalStrings.ContainsKey(valueKey))
-        {
-            targetDict[variable] = LocalStrings[valueKey];
+                return result;
+                break;
         }
-        else if (GlobalStrings.ContainsKey(valueKey))
-        {
-            targetDict[variable] = GlobalStrings[valueKey];
-        }
-        else
-        {
-            targetDict[variable] = valueKey;
-        }
+        return "";
     }
 
     private static void RunSystemInstruction(string functionName)
@@ -338,7 +335,7 @@
         switch (functionName)
         {
             case "write": 
-                Console.WriteLine($">> {GlobalStrings["str-in"]}");
+                Console.WriteLine($">> {GlobalStrings["sys-console"]}");
                 break;
             case "read":
                 var input = Console.ReadLine();
@@ -347,30 +344,41 @@
                     Console.WriteLine($">> Input not valid");
                     break;
                 }
-                GlobalStrings["str-out"] = input;
+                GlobalStrings["sys-console"] = input;
                 break;
             case "toNum":
+                float number = 0;
+                if (float.TryParse(GlobalStrings["STR-i"], out float result))
+                {
+                    number = result;
+                }
+
+                GlobalNumbers["NUM-i"] = number;
                 break;
             case "toString":
+                GlobalStrings["STR-i"] = GlobalNumbers["NUM-i"].ToString();
+                break;
+            case "random":
+                GlobalNumbers["NUM-i"] = 0;
                 break;
             default:
-                CrashError("Invalid Syntax, system function does not exist");
+                CrashError("Invalid Syntax, system function does not exist", new []{"None"});
                 break;
             
         }
     }
 
-    public static void CrashError(string ErrorMsg)
+    public static void CrashError(string ErrorMsg, string[] Instruction)
     {
-        Console.WriteLine($"ERROR: {ErrorMsg}");
+        Console.WriteLine($"ERROR: {ErrorMsg}\nInstruction Data : {String.Join(' ', Instruction)} [{Instruction.Length}]");
         Console.WriteLine("Press any key to exit...");
         Console.ReadKey();
         Environment.Exit(0);
     }
     
-    public static float EvaluateExpression(string[] arguments, Dictionary<string, float> localNumbers, Dictionary<string, string> localStrings)
+    public static float EvaluateExpression(string[] arguments, Dictionary<string, float> localNumbers)
     {
-        List<string> postfix = InfixToPostfix(arguments, localNumbers, localStrings);
+        List<string> postfix = InfixToPostfix(arguments, localNumbers);
         return EvaluatePostfix(postfix);
     }
 
@@ -381,7 +389,7 @@
             { "*", 2 },
             { "/", 2 }
         };
-    private static List<string> InfixToPostfix(string[] tokens, Dictionary<string, float> localNumbers, Dictionary<string, string> localStrings)
+    private static List<string> InfixToPostfix(string[] tokens, Dictionary<string, float> localNumbers)
     {
         List<string> output = new List<string>();
         Stack<string> operators = new Stack<string>();
@@ -418,7 +426,7 @@
             }
             else if (GlobalNumbers.ContainsKey(token))
             {
-                output.Add(localNumbers[token].ToString());
+                output.Add(GlobalNumbers[token].ToString());
             }
             else if (localNumbers.ContainsKey(token))
             {
@@ -426,7 +434,7 @@
             }
             else
             {
-                CrashError("Invalid Syntax, expression has wrong sequence of operators or invalid variable calls");
+                CrashError($"Invalid Syntax, expression has wrong sequence of operators or invalid variable calls", tokens);
             }
         }
 
@@ -471,18 +479,28 @@
         return stack.Pop();
     }
 
-    private static bool IsVariableValid(string variableName, Dictionary<string, float> localNumbers, Dictionary<string, string> localStrings)
-    {
-        if(variableName.Contains(' ')) return false;
-        if(variableName.Contains('.')) return false;
-        foreach (var ch in variableName) if(char.IsDigit(ch)) return false;
-        
-        if(localNumbers.ContainsKey(variableName)) return false;
-        if(localStrings.ContainsKey(variableName)) return false;
-        
-        if(GlobalNumbers.ContainsKey(variableName)) return false;
-        if(GlobalStrings.ContainsKey(variableName)) return false;
+    // private static bool IsVariableValid(string variableName, Dictionary<string, float> localNumbers, Dictionary<string, string> localStrings)
+    // {
+    //     if(variableName.Contains(' ')) return false;
+    //     if(variableName.Contains('.')) return false;
+    //     foreach (var ch in variableName) if(char.IsDigit(ch)) return false;
+    //     
+    //     if(localNumbers.ContainsKey(variableName)) return false;
+    //     if(localStrings.ContainsKey(variableName)) return false;
+    //     
+    //     if(GlobalNumbers.ContainsKey(variableName)) return false;
+    //     if(GlobalStrings.ContainsKey(variableName)) return false;
+    //
+    //     return true;
+    // }
 
+    private static bool IsVariableFormatValid(string VarName)
+    {
+        if (VarName.Contains('.')) return false;
+        if(VarName.Contains(',')) return false;
+        if(VarName.Contains(' ')) return false;
+        if(VarName.Contains('?')) return false;
+        foreach (var ch in VarName) if(char.IsDigit(ch)) return false;
         return true;
     }
 
