@@ -69,13 +69,23 @@
         {
             string tempBlock = "";
             string functionName = "";
+            bool isComment = false;
             bool blockStarted = false;
             List<string> InstructionLines = new List<string>();
+            
+            // Console.WriteLine(IndexFile);
 
             for (int i = 0; i < IndexFile.Length; i++)
             {
                 char currentChar = IndexFile[i];
 
+                if (currentChar == '#')
+                {
+                    isComment = !isComment;
+                    continue;
+                } 
+                if(isComment) continue;
+                
                 switch (currentChar)
                 {
                     case '.':
@@ -93,7 +103,7 @@
                         break;
 
                     case '}':
-                        // FunctionLibrary.Add(functionName, InstructionLines.ToArray());
+                        
                         RegisterFunction(functionName,InstructionLines );
 
                         tempBlock = "";
@@ -153,7 +163,6 @@
 
             List<string> SplitInstruction = new List<string>();
             bool IsString = false;
-            bool IsComment = false;
             string token = "";
 
             for (int i = 0; i < instruction.Length; i++)
@@ -162,17 +171,6 @@
                 if (c == '"')
                 {
                     IsString = !IsString;
-                    continue;
-                }
-
-                if (c == '#')
-                {
-                    IsComment = !IsComment;
-                    continue;
-                }
-
-                if (IsComment)
-                {
                     continue;
                 }
                 if (char.IsWhiteSpace(c) && !IsString)
@@ -194,8 +192,8 @@
                 SplitInstruction.Add(token);
             }
 
-            // Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
-            FunctionInstructions.Add(SplitInstruction.ToArray());
+            Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
+            // FunctionInstructions.Add(SplitInstruction.ToArray());
             index++;
         }
         
