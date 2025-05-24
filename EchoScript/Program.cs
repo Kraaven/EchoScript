@@ -192,8 +192,8 @@
                 SplitInstruction.Add(token);
             }
 
-            Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
-            // FunctionInstructions.Add(SplitInstruction.ToArray());
+            // Console.WriteLine($"[{index}] : ({string.Join(",", SplitInstruction)})");
+            FunctionInstructions.Add(SplitInstruction.ToArray());
             index++;
         }
         
@@ -208,6 +208,57 @@
         
         foreach (var Instruction in FunctionLibrary[functionName])
         {
+            
+            //Condition Checking
+            
+            if (Instruction is ["if", _, _, _, ":", _, "|", _])
+            {
+                string leftOperand = Instruction[1];
+                string op = Instruction[2];
+                string rightOperand = Instruction[3];
+                string trueFunction = Instruction[5];
+                string falseFunction = Instruction[7];
+
+                HashSet<string> validOps = new() { "<", ">", "<=", ">=", "==", "!=" };
+                if (!validOps.Contains(op)) CrashError("Invalid operator in if condition", Instruction);
+
+                float GetOperandValue(string token)
+                {
+                    if (float.TryParse(token, out float val)) return val;
+                    var confirm = ConfirmNumVariable(token, LocalNumbers);
+                    if (!confirm.isvariable) CrashError($"Invalid Operand, variable does not exist", Instruction);
+                    return confirm.varDict[token];
+                }
+
+                float left = GetOperandValue(leftOperand);
+                float right = GetOperandValue(rightOperand);
+
+                bool condition = op switch
+                {
+                    "<" => left < right,
+                    ">" => left > right,
+                    "<=" => left <= right,
+                    ">=" => left >= right,
+                    "==" => Math.Abs(left - right) < 0.001f,
+                    "!=" => Math.Abs(left - right) > 0.001f,
+                    _ => false
+                };
+
+                void CallIfValid(string func)
+                {
+                    if (func == "pass") return;
+                    if (!FunctionLibrary.ContainsKey(func)) CrashError("Function does not exist", Instruction);
+                    CallFunction(func);
+                }
+
+                CallIfValid(condition ? trueFunction : falseFunction);
+                continue;
+            }
+            else if(Instruction[0] == "if") 
+            {
+                CrashError("Invalid Syntax, if condition must follow 'if v op v : func | func'", Instruction);
+            }
+
 
             //Function Calling
             switch (Instruction[0])
@@ -266,6 +317,13 @@
                 CrashError("Invalid Syntax, instruction is nonsense", Instruction);
                 return;
             }
+
+            // if (variable[0] == '$' && variable.Count(x => x == '$') == 1)
+            // {
+            //     var dynVariable = new string(variable.Skip(1).ToArray());
+            //     // var dynGaffirm = ConfirmStrVariable()
+            //      figure it out
+            // }
             
             var strAffirm = ConfirmStrVariable(variable, LocalStrings);
             var numAffirm = ConfirmNumVariable(variable, LocalNumbers);
@@ -358,6 +416,28 @@
                 break;
             case "random":
                 GlobalNumbers["NUM-i"] = 0;
+                break;
+            case "arr":
+                if(!GlobalStrings["STR-i"].Equals("num") && !GlobalStrings["STR-i"].Equals("str")) CrashError("Invalid Syntax, not a valid variable type", ["arr", GlobalStrings["STR-i"]]);
+                if(GlobalStrings["STR-x"].Equals("") || !IsVariableFormatValid(GlobalStrings["STR-x"])) CrashError("Invalid Syntax, not a valid variable name", ["arr", GlobalStrings["STR-x"]]);
+                if(GlobalNumbers["NUM-i"] is 0 or 1) CrashError("Invalid Syntax, arrays cannot be declared with 0 or 1 elements", ["arr", GlobalNumbers["Num-i"].ToString()]);
+
+                if (GlobalStrings["STR-i"].Equals("str"))
+                {
+                    for (int i = 0; i < GlobalNumbers["NUM-i"]; i++)
+                    {
+                        GlobalStrings.Add($"{GlobalStrings["STR-x"]}_{i}", "");
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < GlobalNumbers["NUM-i"]; i++)
+                    {
+                        GlobalNumbers.Add($"{GlobalStrings["STR-x"]}_{i}", 0);
+                    }
+                }
+                
+
                 break;
             default:
                 CrashError("Invalid Syntax, system function does not exist", new []{"None"});
@@ -476,21 +556,6 @@
 
         return stack.Pop();
     }
-
-    // private static bool IsVariableValid(string variableName, Dictionary<string, float> localNumbers, Dictionary<string, string> localStrings)
-    // {
-    //     if(variableName.Contains(' ')) return false;
-    //     if(variableName.Contains('.')) return false;
-    //     foreach (var ch in variableName) if(char.IsDigit(ch)) return false;
-    //     
-    //     if(localNumbers.ContainsKey(variableName)) return false;
-    //     if(localStrings.ContainsKey(variableName)) return false;
-    //     
-    //     if(GlobalNumbers.ContainsKey(variableName)) return false;
-    //     if(GlobalStrings.ContainsKey(variableName)) return false;
-    //
-    //     return true;
-    // }
 
     private static bool IsVariableFormatValid(string VarName)
     {

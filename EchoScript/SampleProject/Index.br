@@ -1,29 +1,24 @@
 ﻿.main{
-    
-    sys-console = "Welcome to the Number calculator";
-    syscall : write;
-    
-    # Comment to test of this works #
-    call : test;
-}
 
-.test{
-
-    # take the user input #
-    sys-console = "Give me a number :";
+    # Ask for user age #
+    sys-console = "What is your age? :";
     syscall : write;
     syscall : read;
-    str number = sys-console;
     
-    # convert the input string into a number #
-    STR-i = number;
+    # Take the age and convert into number #
+    STR-i = sys-console;
     syscall : toNum;
-    num given_number = NUM-i;
+    num givenAge = NUM-i;
     
-    # square the number and print it #
-    given_number = given_number * given_number;
-    NUM-i = given_number;
-    syscall : toString;
-    sys-console = "The Square of your number is : " + STR-i;
+    if givenAge > 17 : adult | child;
+}
+
+.adult{
+    sys-console = "You are an adult!";
+    syscall : write;
+}
+
+.child{
+    sys-console = "Go to bed child";
     syscall : write;
 }
