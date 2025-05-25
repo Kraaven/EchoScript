@@ -8,6 +8,8 @@
     // private static Dictionary<string, float> LocalNumbers = new();
     // private static Dictionary<string, string> LocalStrings = new();
     
+    private static HashSet<string> validOps = new() { "<", ">", "<=", ">=", "==", "!=" };
+    
     public static void Main(String[] args)
     {
         #region FileInput
@@ -209,19 +211,8 @@
         foreach (var Instruction in FunctionLibrary[functionName])
         {
             
-            //Condition Checking
-            
-            if (Instruction is ["if", _, _, _, ":", _, "|", _])
+            //Conditionals
             {
-                string leftOperand = Instruction[1];
-                string op = Instruction[2];
-                string rightOperand = Instruction[3];
-                string trueFunction = Instruction[5];
-                string falseFunction = Instruction[7];
-
-                HashSet<string> validOps = new() { "<", ">", "<=", ">=", "==", "!=" };
-                if (!validOps.Contains(op)) CrashError("Invalid operator in if condition", Instruction);
-
                 float GetOperandValue(string token)
                 {
                     if (float.TryParse(token, out float val)) return val;
@@ -229,20 +220,15 @@
                     if (!confirm.isvariable) CrashError($"Invalid Operand, variable does not exist", Instruction);
                     return confirm.varDict[token];
                 }
-
-                float left = GetOperandValue(leftOperand);
-                float right = GetOperandValue(rightOperand);
-
-                bool condition = op switch
+                
+                float GetGlobalOperandValue(string token)
                 {
-                    "<" => left < right,
-                    ">" => left > right,
-                    "<=" => left <= right,
-                    ">=" => left >= right,
-                    "==" => Math.Abs(left - right) < 0.001f,
-                    "!=" => Math.Abs(left - right) > 0.001f,
-                    _ => false
-                };
+                    if (float.TryParse(token, out float val)) return val;
+                    var confirm = ConfirmNumVariable(token, LocalNumbers);
+                    if (!confirm.isvariable) CrashError($"Invalid Operand, variable does not exist", Instruction);
+                    if(confirm.varDict.Equals(LocalNumbers)) CrashError("Invalid Syntax, While loops can only use global variables", Instruction);
+                    return confirm.varDict[token];
+                }
 
                 void CallIfValid(string func)
                 {
@@ -251,12 +237,89 @@
                     CallFunction(func);
                 }
 
-                CallIfValid(condition ? trueFunction : falseFunction);
-                continue;
-            }
-            else if(Instruction[0] == "if") 
-            {
-                CrashError("Invalid Syntax, if condition must follow 'if v op v : func | func'", Instruction);
+                switch (Instruction[0])
+                {
+                    case "if":
+                        if (Instruction is not ["if", _, _, _, ":", _, "|", _])
+                            CrashError("Invalid Syntax, if condition must follow 'if v op v : func | func'",
+                                Instruction);
+
+                        string IF_leftOperand = Instruction[1];
+                        string IF_op = Instruction[2];
+                        string IF_rightOperand = Instruction[3];
+                        
+                        string trueFunction = Instruction[5];
+                        string falseFunction = Instruction[7];
+
+                        if (!validOps.Contains(IF_op)) CrashError("Invalid operator in if condition", Instruction);
+                        float IF_left = GetOperandValue(IF_leftOperand);
+                        float IF_right = GetOperandValue(IF_rightOperand);
+
+                        
+                        bool IF_condition = IF_op switch
+                        {
+                            "<" => IF_left < IF_right,
+                            ">" => IF_left > IF_right,
+                            "<=" => IF_left <= IF_right,
+                            ">=" => IF_left >= IF_right,
+                            "==" => Math.Abs(IF_left - IF_right) < 0.001f,
+                            "!=" => Math.Abs(IF_left - IF_right) > 0.001f,
+                            _ => false
+                        };
+
+                        CallIfValid(IF_condition ? trueFunction : falseFunction);
+                        continue;
+                    
+                        
+                    
+                    case "while":
+                        if(Instruction is not ["while", _, _, _, ":", _]) CrashError("Invalid Syntax, while conditional must follow 'while v op v : func'",
+                            Instruction);
+                        
+                        string WHILE_leftOperand = Instruction[1];
+                        string WHILE_op = Instruction[2];
+                        string WHILE_rightOperand = Instruction[3];
+                        
+                        string WHILE_CALLFUNCTION = Instruction[5];
+                        
+                        if (!validOps.Contains(WHILE_op)) CrashError("Invalid operator in while conditional", Instruction);
+                        float WHILE_left = GetGlobalOperandValue(WHILE_leftOperand);
+                        float WHILE_right = GetGlobalOperandValue(WHILE_rightOperand);
+
+                        
+                        bool WHILE_condition = WHILE_op switch
+                        {
+                            "<" => WHILE_left < WHILE_right,
+                            ">" => WHILE_left > WHILE_right,
+                            "<=" => WHILE_left <= WHILE_right,
+                            ">=" => WHILE_left >= WHILE_right,
+                            "==" => Math.Abs(WHILE_left - WHILE_right) < 0.001f,
+                            "!=" => Math.Abs(WHILE_left - WHILE_right) > 0.001f,
+                            _ => false
+                        };
+
+                        while (WHILE_condition)
+                        {
+                            CallFunction(WHILE_CALLFUNCTION);
+                            
+                            WHILE_left = GetGlobalOperandValue(WHILE_leftOperand);
+                            WHILE_right = GetGlobalOperandValue(WHILE_rightOperand);
+                            
+                            WHILE_condition = WHILE_op switch
+                            {
+                                "<" => WHILE_left < WHILE_right,
+                                ">" => WHILE_left > WHILE_right,
+                                "<=" => WHILE_left <= WHILE_right,
+                                ">=" => WHILE_left >= WHILE_right,
+                                "==" => Math.Abs(WHILE_left - WHILE_right) < 0.001f,
+                                "!=" => Math.Abs(WHILE_left - WHILE_right) > 0.001f,
+                                _ => false
+                            };
+                        }
+                        
+                        
+                        continue;
+                }
             }
 
 

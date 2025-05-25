@@ -16,9 +16,28 @@
 .adult{
     sys-console = "You are an adult!";
     syscall : write;
-}
+    
+    sys-console = " ";
+    syscall : write;
+    syscall : write;
+    
+    while NUM-i > 0 : unAge;
+    
+}       
 
 .child{
     sys-console = "Go to bed child";
     syscall : write;
+}
+
+.unAge{
+    
+    NUM-i = NUM-i - 1;
+    
+    syscall : toString;
+    str age = STR-i;
+    
+    sys-console = "Your age is : " + age;
+    syscall : write;
+    
 }
