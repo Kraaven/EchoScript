@@ -1,9 +1,164 @@
-﻿.main{
-    num nnn = 30 / 5;
-    str numP = "nnn";
-    
-    NUM-i = $numP;
-    syscall : toString;
-    sys-console = STR-i;
+﻿.global{
+    num arraySize = 0;
+    num currentIndex = 0;
+    num innerIndex = 0;
+    num outerIndex = 0;
+    num tempValue = 0;
+    num maxIndex = 0;
+    num innerLimit = 0;
+    str arrayName = 'numbers';
+    str currentElement = ' ';
+    str nextElement = ' ';
+}
+
+.main{
+    sys-console = 'Bubble Sort Program';
     syscall : write;
+    
+    call : getArraySize;
+    call : createArray;
+    call : getElements;
+    call : printOriginalArray;
+    call : bubbleSort;
+    call : printSortedArray;
+}
+
+.getArraySize{
+    sys-console = 'Enter the number of elements (minimum 2): ';
+    syscall : write;
+    syscall : read;
+    STR-i = sys-console;
+    syscall : toNum;
+    arraySize = NUM-i;
+}
+
+.createArray{
+    STR-i = 'num';
+    STR-x = numbers;
+    NUM-i = arraySize;
+    syscall : arr;
+}
+
+.getElements{
+    sys-console = 'Enter the elements:';
+    syscall : write;
+    
+    currentIndex = 0;
+    while currentIndex < arraySize : inputElement;
+}
+
+.inputElement{
+    NUM-i = currentIndex;
+    syscall : toString;
+    sys-console = 'Element ' + STR-i + ': ';
+    syscall : write;
+    
+    syscall : read;
+    STR-i = sys-console;
+    syscall : toNum;
+    
+    # Create pointer to current array element #
+    NUM-i = currentIndex;
+    syscall : toString;
+    currentElement = 'numbers_' + STR-i;
+    
+    # Assign value to array element using pointer #
+    $currentElement = NUM-i;
+    
+    currentIndex = currentIndex + 1;
+}
+
+.printOriginalArray{
+    sys-console = 'Original array: ';
+    syscall : write;
+    
+    currentIndex = 0;
+    while currentIndex < arraySize : printElement;
+    
+    sys-console = ' ';
+    syscall : write;
+}
+
+.printElement{
+    # Create pointer to current array element #
+    NUM-i = currentIndex;
+    syscall : toString;
+    currentElement = 'numbers_' + STR-i;
+    
+    # Get value from array element using pointer #
+    NUM-i = $currentElement;
+    syscall : toString;
+    sys-console = STR-i + ' ';
+    syscall : write;
+    
+    currentIndex = currentIndex + 1;
+}
+
+.bubbleSort{
+    maxIndex = arraySize - 1;
+    outerIndex = 0;
+    
+    while outerIndex < maxIndex : outerLoop;
+}
+
+.outerLoop{
+    innerIndex = 0;
+    innerLimit = maxIndex - outerIndex;
+    while innerIndex < innerLimit : innerLoop;
+    
+    outerIndex = outerIndex + 1;
+}
+
+.innerLoop{
+    # Create pointers to current and next elements #
+    NUM-i = innerIndex;
+    syscall : toString;
+    currentElement = 'numbers_' + STR-i;
+    
+    NUM-i = innerIndex + 1;
+    syscall : toString;
+    nextElement = 'numbers_' + STR-i;
+    
+    # Compare current and next elements #
+    if $currentElement > $nextElement : swapElements | skipSwap;
+    
+    innerIndex = innerIndex + 1;
+}
+
+.swapElements{
+    # Store current element in temp #
+    tempValue = $currentElement;
+    
+    # Move next element to current position #
+    $currentElement = $nextElement;
+    
+    # Move temp to next position #
+    $nextElement = tempValue;
+}
+
+.skipSwap{
+    # Do nothing - elements are already in correct order #
+}
+
+.printSortedArray{
+    sys-console = 'Sorted array: ';
+    syscall : write;
+    
+    currentIndex = 0;
+    while currentIndex < arraySize : printSortedElement;
+}
+
+.printSortedElement{
+    # Create pointer to current array element #
+    NUM-i = currentIndex;
+    syscall : toString;
+    currentElement = 'numbers_' + STR-i;
+    
+    # Get value from array element using pointer #
+    NUM-i = $currentElement;
+    syscall : toString;
+    sys-console = STR-i + ' ';
+    syscall : write;
+    
+    currentIndex = currentIndex + 1;
 }
