@@ -1,164 +1,153 @@
-﻿.global{
-    num arraySize = 0;
-    num currentIndex = 0;
-    num innerIndex = 0;
-    num outerIndex = 0;
-    num tempValue = 0;
-    num maxIndex = 0;
-    num innerLimit = 0;
-    str arrayName = 'numbers';
-    str currentElement = ' ';
-    str nextElement = ' ';
-}
+﻿
+# Bubble Sort Implementation in Birch #
+# This program creates an array, fills it with sample data, and sorts it using bubble sort #
 
 .main{
-    sys-console = 'Bubble Sort Program';
-    syscall : write;
-    
-    call : getArraySize;
+    # Create the array #
     call : createArray;
-    call : getElements;
-    call : printOriginalArray;
-    call : bubbleSort;
-    call : printSortedArray;
-}
-
-.getArraySize{
-    sys-console = 'Enter the number of elements (minimum 2): ';
+    
+    # Fill array with sample data #
+    call : fillArray;
+    
+    # Display original array #
+    sys-console = "Original array:";
     syscall : write;
-    syscall : read;
-    STR-i = sys-console;
-    syscall : toNum;
-    arraySize = NUM-i;
+    call : displayArray;
+    
+    # Sort the array #
+    call : bubbleSort;
+    
+    # Display sorted array #
+    sys-console = "Sorted array:";
+    syscall : write;
+    call : displayArray;
 }
 
 .createArray{
-    STR-i = 'num';
-    STR-x = numbers;
-    NUM-i = arraySize;
-    syscall : arr;
+    # Set up array creation parameters #
+    STR-i = num;           # Array type #
+    STR-x = sortArray;     # Array name #
+    NUM-i = 5;             # Array size #
+    syscall : arr;         # Create the array #
 }
 
-.getElements{
-    sys-console = 'Enter the elements:';
-    syscall : write;
-    
-    currentIndex = 0;
-    while currentIndex < arraySize : inputElement;
+.fillArray{
+    # Fill array with sample values: 64, 34, 25, 12, 90 #
+    sortArray_0 = 64;
+    sortArray_1 = 34;
+    sortArray_2 = 25;
+    sortArray_3 = 12;
+    sortArray_4 = 90;
 }
 
-.inputElement{
-    NUM-i = currentIndex;
+.displayArray{
+    # Display all array elements #
+    NUM-i = sortArray_0;
     syscall : toString;
-    sys-console = 'Element ' + STR-i + ': ';
+    sys-console = STR-i + " ";
     syscall : write;
     
-    syscall : read;
-    STR-i = sys-console;
-    syscall : toNum;
-    
-    # Create pointer to current array element #
-    NUM-i = currentIndex;
+    NUM-i = sortArray_1;
     syscall : toString;
-    currentElement = 'numbers_' + STR-i;
-    
-    # Assign value to array element using pointer #
-    $currentElement = NUM-i;
-    
-    currentIndex = currentIndex + 1;
-}
-
-.printOriginalArray{
-    sys-console = 'Original array: ';
+    sys-console = STR-i + " ";
     syscall : write;
     
-    currentIndex = 0;
-    while currentIndex < arraySize : printElement;
-    
-    sys-console = ' ';
-    syscall : write;
-}
-
-.printElement{
-    # Create pointer to current array element #
-    NUM-i = currentIndex;
+    NUM-i = sortArray_2;
     syscall : toString;
-    currentElement = 'numbers_' + STR-i;
-    
-    # Get value from array element using pointer #
-    NUM-i = $currentElement;
-    syscall : toString;
-    sys-console = STR-i + ' ';
+    sys-console = STR-i + " ";
     syscall : write;
     
-    currentIndex = currentIndex + 1;
+    NUM-i = sortArray_3;
+    syscall : toString;
+    sys-console = STR-i + " ";
+    syscall : write;
+    
+    NUM-i = sortArray_4;
+    syscall : toString;
+    sys-console = STR-i;
+    syscall : write;
+    
+    sys-console = " ";
+    syscall : write;
 }
 
 .bubbleSort{
-    maxIndex = arraySize - 1;
-    outerIndex = 0;
-    
-    while outerIndex < maxIndex : outerLoop;
+    # Initialize loop counters using system variables #
+    NUM-i = 0;  # Outer loop counter #
+    while NUM-i < 4 : outerLoopBody;
 }
 
-.outerLoop{
-    innerIndex = 0;
-    innerLimit = maxIndex - outerIndex;
-    while innerIndex < innerLimit : innerLoop;
+.outerLoopBody{
+    # Inner loop for each pass #
+    NUM-x = 0;  # Inner loop counter #
+    NUM-c = 1;  # Swapped flag #
+    while NUM-x < 4 : innerLoopBody;
     
-    outerIndex = outerIndex + 1;
+    # Increment outer counter and continue #
+    NUM-i = NUM-i + 1;
 }
 
-.innerLoop{
-    # Create pointers to current and next elements #
-    NUM-i = innerIndex;
-    syscall : toString;
-    currentElement = 'numbers_' + STR-i;
-    
-    NUM-i = innerIndex + 1;
-    syscall : toString;
-    nextElement = 'numbers_' + STR-i;
-    
-    # Compare current and next elements #
-    if $currentElement > $nextElement : swapElements | skipSwap;
-    
-    innerIndex = innerIndex + 1;
+.innerLoopBody{
+    # Compare adjacent elements and swap if needed #
+    if NUM-x == 0 : compareZeroOne | checkNextPair;
 }
 
-.swapElements{
-    # Store current element in temp #
-    tempValue = $currentElement;
-    
-    # Move next element to current position #
-    $currentElement = $nextElement;
-    
-    # Move temp to next position #
-    $nextElement = tempValue;
+.checkNextPair{
+    if NUM-x == 1 : compareOneTwo | checkNextPair2;
 }
 
-.skipSwap{
-    # Do nothing - elements are already in correct order #
+.checkNextPair2{
+    if NUM-x == 2 : compareTwoThree | checkNextPair3;
 }
 
-.printSortedArray{
-    sys-console = 'Sorted array: ';
-    syscall : write;
-    
-    currentIndex = 0;
-    while currentIndex < arraySize : printSortedElement;
+.checkNextPair3{
+    if NUM-x == 3 : compareThreeFour | incrementInner;
 }
 
-.printSortedElement{
-    # Create pointer to current array element #
-    NUM-i = currentIndex;
-    syscall : toString;
-    currentElement = 'numbers_' + STR-i;
-    
-    # Get value from array element using pointer #
-    NUM-i = $currentElement;
-    syscall : toString;
-    sys-console = STR-i + ' ';
-    syscall : write;
-    
-    currentIndex = currentIndex + 1;
+.compareZeroOne{
+    if sortArray_0 > sortArray_1 : swapZeroOne | incrementInner;
+}
+
+.compareOneTwo{
+    if sortArray_1 > sortArray_2 : swapOneTwo | incrementInner;
+}
+
+.compareTwoThree{
+    if sortArray_2 > sortArray_3 : swapTwoThree | incrementInner;
+}
+
+.compareThreeFour{
+    if sortArray_3 > sortArray_4 : swapThreeFour | incrementInner;
+}
+
+.swapZeroOne{
+    NUM-l = sortArray_0;
+    sortArray_0 = sortArray_1;
+    sortArray_1 = NUM-l;
+    call : incrementInner;
+}
+
+.swapOneTwo{
+    NUM-l = sortArray_1;
+    sortArray_1 = sortArray_2;
+    sortArray_2 = NUM-l;
+    call : incrementInner;
+}
+
+.swapTwoThree{
+    NUM-l = sortArray_2;
+    sortArray_2 = sortArray_3;
+    sortArray_3 = NUM-l;
+    call : incrementInner;
+}
+
+.swapThreeFour{
+    NUM-l = sortArray_3;
+    sortArray_3 = sortArray_4;
+    sortArray_4 = NUM-l;
+    call : incrementInner;
+}
+
+.incrementInner{
+    NUM-x = NUM-x + 1;
 }

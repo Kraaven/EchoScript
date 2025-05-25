@@ -151,8 +151,7 @@
         #endregion
 
         CallFunction("main");
-
-
+        
         Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
         Console.ReadKey();
     }
