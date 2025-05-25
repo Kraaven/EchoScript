@@ -1,3 +1,9 @@
 ﻿.main{
-    syscall : describe;
+    num nnn = 30 / 5;
+    str numP = "nnn";
+    
+    NUM-i = $numP;
+    syscall : toString;
+    sys-console = STR-i;
+    syscall : write;
 }
