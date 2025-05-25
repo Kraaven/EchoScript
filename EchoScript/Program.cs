@@ -148,6 +148,11 @@
         
         #endregion
         CallFunction("main");
+        
+        Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
+        Console.ReadKey();
+        return;
+        
     }
 
 
@@ -500,8 +505,125 @@
                     }
                 }
                 
-
                 break;
+            
+            
+case "describe":
+    Console.WriteLine(@"
+=== BIRCH PROGRAMMING LANGUAGE GUIDE ===
+
+== FILE STRUCTURE ==
+• Files use .br extension
+• Projects require Index.br as entry point  
+• Must contain a 'main' function to execute
+• Single files can be run directly
+
+== BASIC SYNTAX ==
+Functions are defined with:
+    .functionName {
+        instruction1;
+        instruction2;
+    }
+
+Comments use:
+    # comment text #
+
+== DATA TYPES ==
+• num - floating point numbers
+• str - text strings  
+• Arrays of num or str (created via syscall)
+
+== VARIABLE OPERATIONS ==
+Declaration:
+    num variableName = expression
+    str variableName = stringExpression
+
+Assignment:
+    variableName = newValue
+
+== EXPRESSIONS ==
+Arithmetic: +, -, *, / with parentheses support
+String concatenation: str1 + str2 + str3
+
+== CONTROL FLOW ==
+Conditionals:
+    if value1 operator value2 : trueFunction | falseFunction
+    
+While loops:
+    while value1 operator value2 : functionName
+    (Note: while loops require global variables only)
+
+Operators: <, >, <=, >=, ==, !=
+
+== FUNCTION CALLS ==
+    call : functionName
+    syscall : systemFunction
+
+== SYSTEM FUNCTIONS (syscalls) ==
+• write     - Output sys-console to screen
+• read      - Read input into sys-console  
+• toNum     - Convert STR-i to NUM-i
+• toString  - Convert NUM-i to STR-i
+• random    - Generate random number in NUM-i
+• arr       - Create array (type in STR-i, name in STR-x, size in NUM-i)
+• describe  - Show this help text
+
+== SYSTEM VARIABLES ==
+Always available:
+• sys-console - Console I/O buffer
+• STR-i, STR-x, STR-c, STR-l - String scratch variables
+• NUM-i, NUM-x, NUM-c, NUM-l - Number scratch variables
+
+== ARRAY CREATION ==
+Steps to create arrays:
+1. Set STR-i to 'num' or 'str' (type)
+2. Set STR-x to array name
+3. Set NUM-i to array size (minimum 2)
+4. Call: syscall : arr
+
+Arrays are accessed as: arrayName_0, arrayName_1, etc.
+
+== VARIABLE NAMING RULES ==
+• No dots, commas, spaces, or question marks
+• No numeric characters allowed
+• Case sensitive
+
+== SCOPING ==
+• Global variables persist across all functions
+• Local variables exist only within their function
+• While loops can only reference global variables
+
+== EXAMPLE PROGRAM ==
+    .main {
+        str message = Hello + World;
+        sys-console = message;
+        syscall : write;
+        
+        num x = 5;
+        num y = 10;
+        if x < y : showSmaller | showLarger;
+    }
+    
+    .showSmaller {
+        sys-console = X is smaller;
+        syscall : write;
+    }
+    
+    .showLarger {
+        sys-console = X is larger;
+        syscall : write;
+    }
+
+== NOTES ==
+• All instructions end with semicolons
+• Whitespace is ignored during parsing  
+• Functions cannot return values directly
+• Use global variables for data sharing
+• Error messages show instruction details for debugging
+
+=== END OF GUIDE ===
+");
+    break;
             default:
                 CrashError("Invalid Syntax, system function does not exist", new []{"None"});
                 break;
@@ -629,6 +751,4 @@
         foreach (var ch in VarName) if(char.IsDigit(ch)) return false;
         return true;
     }
-
-
 }
