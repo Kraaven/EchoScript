@@ -150,6 +150,7 @@
 
         #endregion
 
+        // Console.WriteLine($"All functions registered in Birch Runtime : {String.Join(", ", FunctionLibrary.Keys)}" );
         CallFunction("main");
 
         Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
@@ -231,6 +232,7 @@
                                 var VARname = $"{Instruction[1]}_{i}";
                                 GlobalNumbers.Add(VARname, 0);
                             }
+
 
                             continue;
                         }
