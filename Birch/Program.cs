@@ -151,7 +151,7 @@
         #endregion
 
         CallFunction("main");
-        
+
         Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
         Console.ReadKey();
     }
@@ -175,11 +175,7 @@
             for (var i = 0; i < instruction.Length; i++)
             {
                 var c = instruction[i];
-                if (c == '"' || c == '\'')
-                {
-                    IsString = !IsString;
-                    continue;
-                }
+                if (c == '"' || c == '\'') IsString = !IsString;
 
                 if (char.IsWhiteSpace(c) && !IsString)
                 {
@@ -215,6 +211,33 @@
             switch (Instruction[0])
             {
                 case "num":
+
+                    if (Instruction.Length == 3 && Instruction[2][0] == '[' && Instruction[2].Last() == ']')
+                    {
+                        if (float.TryParse(Instruction[2].Substring(1, Instruction[2].Length - 2),
+                                out var result))
+                        {
+                            if (result < 2)
+                                CrashError("Invalid Syntax, array number size must me higher than 1", Instruction);
+                            if ((int)result != result)
+                                CrashError("Invalid Syntax, array number size cannot be floating point", Instruction);
+                            if (!IsVariableFormatValid(Instruction[1]))
+                                CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                            if (ConfirmNumVariable(Instruction[1], GlobalNumbers, GlobalStrings).isvariable)
+                                CrashError("Invalid Syntax, variable already defined", Instruction);
+
+                            for (var i = 0; i < result; i++)
+                            {
+                                var VARname = $"{Instruction[1]}_{i}";
+                                GlobalNumbers.Add(VARname, 0);
+                            }
+
+                            continue;
+                        }
+
+                        CrashError("Syntax Error, not a valid number", Instruction);
+                    }
+
                     if (Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
                     if (!IsVariableFormatValid(Instruction[1]))
                         CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
@@ -228,12 +251,39 @@
 
                     continue;
                 case "str":
+
+                    if (Instruction.Length == 3 && Instruction[2][0] == '[' && Instruction[2].Last() == ']')
+                    {
+                        if (float.TryParse(Instruction[2].Substring(1, Instruction[2].Length - 2),
+                                out var result))
+                        {
+                            if (result < 2)
+                                CrashError("Invalid Syntax, array number size must me higher than 1", Instruction);
+                            if ((int)result != result)
+                                CrashError("Invalid Syntax, array number size cannot be floating point", Instruction);
+                            if (!IsVariableFormatValid(Instruction[1]))
+                                CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                            if (ConfirmStrVariable(Instruction[1], GlobalStrings, GlobalNumbers).isvariable)
+                                CrashError("Invalid Syntax, variable already defined", Instruction);
+
+                            for (var i = 0; i < result; i++)
+                            {
+                                var VARname = $"{Instruction[1]}_{i}";
+                                GlobalStrings.Add(VARname, "");
+                            }
+
+                            continue;
+                        }
+
+                        CrashError("Syntax Error, not a valid number", Instruction);
+                    }
+
                     if (Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
                     if (!IsVariableFormatValid(Instruction[1]))
                         CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
                     if (Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator", Instruction);
 
-                    var affirm = ConfirmStrVariable(Instruction[0], GlobalStrings, GlobalNumbers);
+                    var affirm = ConfirmStrVariable(Instruction[1], GlobalStrings, GlobalNumbers);
                     if (affirm.isvariable) CrashError("Invalid Syntax, variable already defined", Instruction);
                     else
                         GlobalStrings.Add(Instruction[1],
@@ -254,17 +304,46 @@
                 return;
             }
 
-            var strAffirm = ConfirmStrVariable(variable, GlobalStrings, GlobalNumbers);
-            var numAffirm = ConfirmNumVariable(variable, GlobalNumbers, GlobalStrings);
-            if (strAffirm.isvariable)
-                strAffirm.varDict[variable] =
-                    EvaluateStringExpression(Instruction.Skip(2).ToArray(), GlobalStrings, GlobalNumbers);
-            if (numAffirm.isvariable)
-                numAffirm.varDict[variable] =
-                    EvaluateExpression(Instruction.Skip(2).ToArray(), GlobalNumbers, GlobalStrings);
+// Handle pointer dereferencing for assignment in global scope
+            if (variable.StartsWith("$") && variable.Length > 1)
+            {
+                var pointerVarName = variable.Substring(1);
+                var pointerAffirm = ConfirmStrVariable(pointerVarName, GlobalStrings, GlobalNumbers);
 
-            if (!strAffirm.isvariable && !numAffirm.isvariable)
-                CrashError("Invalid Syntax, Variable does not exist", Instruction);
+                if (!pointerAffirm.isvariable)
+                    CrashError("Invalid Syntax, Pointer variable does not exist", Instruction);
+
+                // Get the actual variable name that the pointer points to
+                var actualVariableName = pointerAffirm.varDict[pointerVarName].Replace("\"", "");
+
+                // Now assign to the actual variable
+                var strAffirm = ConfirmStrVariable(actualVariableName, GlobalStrings, GlobalNumbers);
+                var numAffirm = ConfirmNumVariable(actualVariableName, GlobalNumbers, GlobalStrings);
+
+                if (strAffirm.isvariable)
+                    strAffirm.varDict[actualVariableName] =
+                        EvaluateStringExpression(Instruction.Skip(2).ToArray(), GlobalStrings, GlobalNumbers);
+                else if (numAffirm.isvariable)
+                    numAffirm.varDict[actualVariableName] =
+                        EvaluateExpression(Instruction.Skip(2).ToArray(), GlobalNumbers, GlobalStrings);
+                else
+                    CrashError("Invalid Syntax, Pointer does not point to a valid variable", Instruction);
+            }
+            else
+            {
+                // Original direct variable assignment logic
+                var strAffirm = ConfirmStrVariable(variable, GlobalStrings, GlobalNumbers);
+                var numAffirm = ConfirmNumVariable(variable, GlobalNumbers, GlobalStrings);
+
+                if (strAffirm.isvariable)
+                    strAffirm.varDict[variable] =
+                        EvaluateStringExpression(Instruction.Skip(2).ToArray(), GlobalStrings, GlobalNumbers);
+                else if (numAffirm.isvariable)
+                    numAffirm.varDict[variable] =
+                        EvaluateExpression(Instruction.Skip(2).ToArray(), GlobalNumbers, GlobalStrings);
+                else
+                    CrashError("Invalid Syntax, Variable does not exist", Instruction);
+            }
         }
     }
 
@@ -416,6 +495,33 @@
             switch (Instruction[0])
             {
                 case "num":
+
+                    if (Instruction.Length == 3 && Instruction[2][0] == '[' && Instruction[2].Last() == ']')
+                    {
+                        if (float.TryParse(Instruction[2].Substring(1, Instruction[2].Length - 2),
+                                out var result))
+                        {
+                            if (result < 2)
+                                CrashError("Invalid Syntax, array number size must me higher than 1", Instruction);
+                            if ((int)result != result)
+                                CrashError("Invalid Syntax, array number size cannot be floating point", Instruction);
+                            if (!IsVariableFormatValid(Instruction[1]))
+                                CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                            if (ConfirmNumVariable(Instruction[1], LocalNumbers, LocalStrings).isvariable)
+                                CrashError("Invalid Syntax, variable already defined", Instruction);
+
+                            for (var i = 0; i < result; i++)
+                            {
+                                var VARname = $"{Instruction[1]}_{i}";
+                                GlobalNumbers.Add(VARname, 0);
+                            }
+
+                            continue;
+                        }
+
+                        CrashError("Syntax Error, not a valid number", Instruction);
+                    }
+
                     if (Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
                     if (!IsVariableFormatValid(Instruction[1]))
                         CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
@@ -429,12 +535,39 @@
 
                     continue;
                 case "str":
+
+                    if (Instruction.Length == 3 && Instruction[2][0] == '[' && Instruction[2].Last() == ']')
+                    {
+                        if (float.TryParse(Instruction[2].Substring(1, Instruction[2].Length - 2),
+                                out var result))
+                        {
+                            if (result < 2)
+                                CrashError("Invalid Syntax, array number size must me higher than 1", Instruction);
+                            if ((int)result != result)
+                                CrashError("Invalid Syntax, array number size cannot be floating point", Instruction);
+                            if (!IsVariableFormatValid(Instruction[1]))
+                                CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
+                            if (ConfirmStrVariable(Instruction[1], LocalStrings, LocalNumbers).isvariable)
+                                CrashError("Invalid Syntax, variable already defined", Instruction);
+
+                            for (var i = 0; i < result; i++)
+                            {
+                                var VARname = $"{Instruction[1]}_{i}";
+                                GlobalStrings.Add(VARname, "");
+                            }
+
+                            continue;
+                        }
+
+                        CrashError("Syntax Error, not a valid number", Instruction);
+                    }
+
                     if (Instruction.Length < 4) CrashError("Invalid Syntax, Instruction is incomplete", Instruction);
                     if (!IsVariableFormatValid(Instruction[1]))
                         CrashError("Invalid Syntax, Not a valid Variable Name", Instruction);
                     if (Instruction[2] != "=") CrashError("Invalid Syntax, no assigment operator", Instruction);
 
-                    var affirm = ConfirmStrVariable(Instruction[0], LocalStrings, LocalNumbers);
+                    var affirm = ConfirmStrVariable(Instruction[1], LocalStrings, LocalNumbers);
                     if (affirm.isvariable) CrashError("Invalid Syntax, variable already defined", Instruction);
                     else
                         LocalStrings.Add(Instruction[1],
@@ -455,17 +588,46 @@
                 return;
             }
 
-            var strAffirm = ConfirmStrVariable(variable, LocalStrings, LocalNumbers);
-            var numAffirm = ConfirmNumVariable(variable, LocalNumbers, LocalStrings);
-            if (strAffirm.isvariable)
-                strAffirm.varDict[variable] =
-                    EvaluateStringExpression(Instruction.Skip(2).ToArray(), LocalStrings, LocalNumbers);
-            if (numAffirm.isvariable)
-                numAffirm.varDict[variable] =
-                    EvaluateExpression(Instruction.Skip(2).ToArray(), LocalNumbers, LocalStrings);
+            // Handle pointer dereferencing for assignment
+            if (variable.StartsWith("$") && variable.Length > 1)
+            {
+                var pointerVarName = variable.Substring(1);
+                var pointerAffirm = ConfirmStrVariable(pointerVarName, LocalStrings, LocalNumbers);
 
-            if (!strAffirm.isvariable && !numAffirm.isvariable)
-                CrashError("Invalid Syntax, Variable does not exist", Instruction);
+                if (!pointerAffirm.isvariable)
+                    CrashError("Invalid Syntax, Pointer variable does not exist", Instruction);
+
+                // Get the actual variable name that the pointer points to
+                var actualVariableName = pointerAffirm.varDict[pointerVarName].Replace("\"", "");
+
+                // Now assign to the actual variable
+                var strAffirm = ConfirmStrVariable(actualVariableName, LocalStrings, LocalNumbers);
+                var numAffirm = ConfirmNumVariable(actualVariableName, LocalNumbers, LocalStrings);
+
+                if (strAffirm.isvariable)
+                    strAffirm.varDict[actualVariableName] =
+                        EvaluateStringExpression(Instruction.Skip(2).ToArray(), LocalStrings, LocalNumbers);
+                else if (numAffirm.isvariable)
+                    numAffirm.varDict[actualVariableName] =
+                        EvaluateExpression(Instruction.Skip(2).ToArray(), LocalNumbers, LocalStrings);
+                else
+                    CrashError("Invalid Syntax, Pointer does not point to a valid variable", Instruction);
+            }
+            else
+            {
+                // Original direct variable assignment logic
+                var strAffirm = ConfirmStrVariable(variable, LocalStrings, LocalNumbers);
+                var numAffirm = ConfirmNumVariable(variable, LocalNumbers, LocalStrings);
+
+                if (strAffirm.isvariable)
+                    strAffirm.varDict[variable] =
+                        EvaluateStringExpression(Instruction.Skip(2).ToArray(), LocalStrings, LocalNumbers);
+                else if (numAffirm.isvariable)
+                    numAffirm.varDict[variable] =
+                        EvaluateExpression(Instruction.Skip(2).ToArray(), LocalNumbers, LocalStrings);
+                else
+                    CrashError("Invalid Syntax, Variable does not exist", Instruction);
+            }
         }
     }
 
@@ -477,7 +639,7 @@
             var pointerVarName = variableName.Substring(1);
             var STRaffirm = ConfirmStrVariable(pointerVarName, localStrings, localNumbers);
             if (STRaffirm.isvariable) return (true, STRaffirm.varDict);
-            else return (false, null);
+            return (false, null);
         }
 
         if (GlobalStrings.ContainsKey(variableName)) return (true, GlobalStrings);
@@ -498,7 +660,7 @@
             {
                 var NumAffirm = ConfirmNumVariable(Paffirm.varDict[pointerVarName], localNumbers, localStrings);
                 if (NumAffirm.isvariable) return (true, NumAffirm.varDict);
-                else CrashError("Invalid Syntax, pointer does not point to a num variable", [variableName]);
+                CrashError("Invalid Syntax, pointer does not point to a num variable", [variableName]);
             }
             else
             {
@@ -514,18 +676,25 @@
     public static string GetStringValue(string token, Dictionary<string, string> localStrings,
         Dictionary<string, float> localNumbers)
     {
+        if (token.Contains('"')) return token.Replace("\"", "");
+
         if (token.StartsWith("$") && token.Length > 1)
         {
-            var Paffirm = ConfirmStrVariable(token, localStrings, localNumbers);
-            if (!Paffirm.isvariable) CrashError("Syntax Error, pointer does not route a valid variable", [token]);
-            var pointerVarName = token.Substring(1);
-            var HiddenAffirm = ConfirmStrVariable(pointerVarName, localStrings, localNumbers);
-            return HiddenAffirm.varDict[pointerVarName];
+            // // Console.WriteLine($"{token} is a pointer");
+            var VARIABLE = token.Substring(1);
+            var Paffirm = ConfirmStrVariable(VARIABLE, localStrings, localNumbers);
+            if (!Paffirm.isvariable) CrashError("Syntax Error, pointer not attached to a valid variable", [token]);
+            var PointerVarName = Paffirm.varDict[VARIABLE].Replace("\"", "");
+
+            var ValidDest = ConfirmStrVariable(PointerVarName, localStrings, localNumbers);
+            if (ValidDest.isvariable) return ValidDest.varDict[PointerVarName];
+            CrashError("Syntax Error, pointer does not route to a valid variable", [token]);
         }
 
         var affirm = ConfirmStrVariable(token, localStrings, localNumbers);
         if (affirm.isvariable) return affirm.varDict[token];
-        return token;
+
+        return "";
     }
 
     public static string EvaluateStringExpression(string[] expression, Dictionary<string, string> localStrings,
@@ -584,7 +753,9 @@
                 GlobalStrings["STR-i"] = GlobalNumbers["NUM-i"].ToString();
                 break;
             case "random":
-                GlobalNumbers["NUM-i"] = 0;
+                var random = new Random();
+                var num = random.Next((int)GlobalNumbers["NUM-i"], (int)GlobalNumbers["NUM-x"]);
+                GlobalNumbers["NUM-i"] = num;
                 break;
             case "arr":
                 if (!GlobalStrings["STR-i"].Equals("num") && !GlobalStrings["STR-i"].Equals("str"))
@@ -604,10 +775,9 @@
 
                 break;
 
-
             case "describe":
                 Console.WriteLine(@"
-=== BIRCH PROGRAMMING LANGUAGE GUIDE ===
+=== BIRCH PROGRAMMING LANGUAGE GUIDE v2.0 ===
 
 == FILE STRUCTURE ==
 • Files use .br extension
@@ -633,8 +803,9 @@ Whitespace, tabs, and newlines are ignored during parsing
 • num - floating point numbers
     Example: num myNumber = 42.5;
 • str - text strings  
-    Example: str myText = 'Hello World';
-• Arrays - collections of num or str (created via syscall : arr)
+    Example: str myText = ""Hello World"";
+• Arrays - collections of num or str
+    Example: num myArray [5];  # Creates myArray_0 through myArray_4 #
 
 == VARIABLE SCOPING ==
 GLOBAL SCOPE:
@@ -646,7 +817,7 @@ GLOBAL SCOPE:
 Global variable declaration:
     .global{
         num globalCounter = 0;
-        str globalMessage = Welcome;
+        str globalMessage = ""Welcome"";
     }
 
 LOCAL SCOPE:
@@ -656,21 +827,25 @@ LOCAL SCOPE:
 • Cannot be used in while loops
 
 == VARIABLE OPERATIONS ==
-Declaration:
-    num variableName = mathematicalExpression
-    str variableName = stringExpression
+Declaration with initialization:
+    num variableName = mathematicalExpression;
+    str variableName = stringExpression;
+
+Array declaration:
+    num arrayName [size];     # Creates arrayName_0, arrayName_1, etc. #
+    str arrayName [size];     # Minimum size is 2 #
 
 Assignment (existing variables):
-    variableName = newValue
+    variableName = newValue;
 
 == EXPRESSIONS ==
 Mathematical: +, -, *, / with full parentheses support
     Example: num result = (x + y) * z / (a - b);
     
 String concatenation: str1 + str2 + str3
-    Example: str fullName = firstName + ' ' + lastName;
+    Example: str fullName = firstName + "" "" + lastName;
 
-== POINTERS (Advanced Feature) ==
+== POINTERS ==
 Birch supports indirect variable access using the $ prefix.
 
 Pointer Syntax:
@@ -683,29 +858,40 @@ How Pointers Work:
 • Pointers respect variable scoping (local vs global)
 
 Pointer Examples:
-    str targetName = myVariable;     # Store variable name as string #
-    num myVariable = 42;             # Create the target variable #
-    num result = $targetName;        # result gets value of myVariable (42) #
-    $targetName = 100;               # Sets myVariable to 100 #
+    str targetName = ""myVariable"";  # Store variable name as string #
+    num myVariable = 42;              # Create the target variable #
+    num result = $targetName;         # result gets value of myVariable (42) #
+    $targetName = 100;                # **NEW: Sets myVariable to 100** #
     
     # Array access via pointers #
-    str arrayIndex = myArray_2;      # Point to array element #
-    num value = $arrayIndex;         # Access array element indirectly #
+    str arrayIndex = ""myArray_2"";   # Point to array element #
+    num value = $arrayIndex;          # Access array element indirectly #
+    $arrayIndex = 999;                # Assign to array element** #
+
+Advanced Pointer Usage:
+    # Dynamic variable selection #
+    str choice = ""option1"";
+    num option1 = 10;
+    num option2 = 20;
+    sys-console = $choice;            # Outputs value of option1 #
+    $choice = 50;                     # Changes option1 to 50 #
 
 Pointer Limitations:
 • Pointer variable must contain a valid, existing variable name
 • Cannot create pointer chains (pointers to pointers)
 • $ symbol cannot be used in variable names
 • Runtime errors occur if pointer references non-existent variables
+• Pointer assignments work in both global and local scopes
 
 == CONTROL FLOW ==
 IF STATEMENTS:
-    if leftValue operator rightValue : trueFunction | falseFunction
+    if leftValue operator rightValue : trueFunction | falseFunction;
     
     Example: if x < y : handleSmaller | handleLarger;
+    Use 'pass' for no action: if x > 0 : doSomething | pass;
     
 WHILE LOOPS:
-    while leftValue operator rightValue : functionName
+    while leftValue operator rightValue : functionName;
     
     Example: while counter < limit : incrementLoop;
     
@@ -717,118 +903,189 @@ COMPARISON OPERATORS:
     >   (greater than) 
     <=  (less than or equal)
     >=  (greater than or equal)
-    ==  (equal to)
-    !=  (not equal to)
+    ==  (equal to - uses floating point tolerance)
+    !=  (not equal to - uses floating point tolerance)
 
-Note : Comparision can only happen between numbers
+Note: Comparisons can only happen between numbers
 
 == FUNCTION CALLS ==
 Regular function call:
-    call : functionName
+    call : functionName;
     
 System function call:
-    syscall : systemFunctionName
+    syscall : systemFunctionName;
 
 Functions cannot return values directly - use global variables for data sharing.
+Use 'pass' as a function name to do nothing (useful in conditionals).
 
 == SYSTEM FUNCTIONS (syscalls) ==
 • write     - Output sys-console content to screen
 • read      - Read user input into sys-console  
-• toNum     - Convert STR-i to NUM-i (string to number)
-• toString  - Convert NUM-i to STR-i (number to string)
-• random    - Generate random number and store in NUM-i
-• arr       - Create array (type in STR-i, name in STR-x, size in NUM-i)
+• toNum     - Convert STR-i to NUM-i (string to number conversion)
+• toString  - Convert NUM-i to STR-i (number to string conversion)
+• random    - Use NUM-i and NUM-x as a range, and set NUM-i as a random  number
 • describe  - Display this help text
 
 == SYSTEM VARIABLES (RESERVED) ==
-The following variables are used internally by system functions:
+The following variables are automatically created and used by system functions:
 • sys-console - Console I/O buffer (used by read/write)
 • STR-i, STR-x, STR-c, STR-l - String scratch variables for syscalls
 • NUM-i, NUM-x, NUM-c, NUM-l - Number scratch variables for syscalls
+
+These variables are your interface to system functions:
+- Put input values into these variables before syscalls
+- Read output values from these variables after syscalls
 
 WARNING: Modifying these variables may cause system functions to behave unexpectedly.
 It is strongly recommended to declare your own global variables instead. All System calls
 use these variables as arguments.
 
 == ARRAY CREATION ==
-Arrays must be created using the syscall system:
+**TWO METHODS AVAILABLE:**
 
-Steps to create an array:
-1. Set STR-i to 'num' or 'str' (array type)
-2. Set STR-x to desired array name
-3. Set NUM-i to array size (minimum 2 elements)
-4. Execute: syscall : arr
+Method 1 - Direct Declaration (RECOMMENDED):
+    num myNumbers [5];        # Creates myNumbers_0 through myNumbers_4 #
+    str myTexts [3];          # Creates myTexts_0 through myTexts_2 #
 
-Array elements are accessed as: arrayName_0, arrayName_1, arrayName_2, etc.
+Method 2 - Legacy syscall method:
+    STR-i = ""num"";           # Set array type #
+    STR-x = ""myNumbers"";     # Set array name #
+    NUM-i = 5;                 # Set array size #
+    syscall : arr;             # Create the array #
 
-Example array creation:
-    STR-i = num;           # Set array type #
-    STR-x = myNumbers;     # Set array name #
-    NUM-i = 5;             # Set array size #
-    syscall : arr;         # Create the array #
+Array Access:
+• Elements are accessed as: arrayName_0, arrayName_1, arrayName_2, etc.
+• Array indices start at 0
+• No bounds checking - accessing invalid indices may cause errors
+• Arrays can be used with pointers for dynamic access
+
+Array Example:
+    num scores [3];           # Create array #
+    scores_0 = 85;            # Set first element #
+    scores_1 = 92;            # Set second element #
+    scores_2 = 78;            # Set third element #
     
-    # Now you can use: myNumbers_0, myNumbers_1, myNumbers_2, myNumbers_3, myNumbers_4 #
+    str index = ""scores_1"";  # Point to second element #
+    num currentScore = $index; # Get value (92) #
+    $index = 95;               # Update second element #
 
 == VARIABLE NAMING RULES ==
 • No dots (.), commas (,), spaces, or question marks (?)
 • No dollar signs ($) - reserved for pointer syntax
 • No numeric characters allowed anywhere in the name
 • Case sensitive (myVar and MyVar are different)
-• Must not conflict with reserved keywords
+• Must not conflict with reserved keywords or system variables
 
 == COMPLETE PROGRAM EXAMPLE ==
-    .global{
-        num counter = 0;
-        str appName = 'Birch Calculator';
-    }
     
-    .main{
-        sys-console = 'appName';
-        syscall : write;
-        
-        call : getUserInput;
-        call : processInput;
-        call : showResult;
-    }
+.global{
+    num secret = 0;
+    num guess = 0;
+    num attempts = 0;
+    num max = 0;
+}
+
+.main{
+    call : askRange;
+
+    NUM-i = 0;
+    NUM-x = max;
+    syscall : random;
+    secret = NUM-i;
+
+    call : greet;
+
+    while guess != secret : askGuess;
+
+    call : successMessage;
+}
+
+.askRange{
+    sys-console = 'Enter the maximum number (must be > 1):';
+    syscall : write;
+
+    syscall : read;
+    STR-i = sys-console;
+    syscall : toNum;
+    max = NUM-i;
+
+    if max <= 1 : rangeTooSmall | pass;
+}
+
+.rangeTooSmall{
+    sys-console = 'Invalid range. Please enter a number greater than 1.';
+    syscall : write;
+    call : askRange;
+}
+
+.greet{
+
+    NUM-i = max;
+    syscall : toString;
+    str MAXNUM = STR-i;
     
-    .getUserInput{
-        sys-console = 'Enter a number: ';
-        syscall : write;
-        syscall : read;
-        STR-i = sys-console;
-        syscall : toNum;
-        counter = NUM-i;
-    }
-    
-    .processInput{
-        counter = counter * 2;
-    }
-    
-    .showResult{
-        NUM-i = counter;
-        syscall : toString;
-        sys-console = 'Result: ' + STR-i;
-        syscall : write;
-    }
+    sys-console = 'Guess the secret number (between 0 and ' + MAXNUM + '): ';
+    syscall : write;
+}
+
+.askGuess{
+    syscall : read;
+    STR-i = sys-console;
+    syscall : toNum;
+    guess = NUM-i;
+
+    attempts = attempts + 1;
+
+    if guess < secret : tooLow | pass;
+    if guess > secret : tooHigh | pass;
+}
+
+.tooLow{
+    sys-console = 'Too low! Try again:';
+    syscall : write;
+}
+
+.tooHigh{
+    sys-console = 'Too high! Try again:';
+    syscall : write;
+}
+
+.successMessage{
+    sys-console = 'Correct! Attempts: ';
+    syscall : write;
+
+    NUM-i = attempts;
+    syscall : toString;
+    sys-console = STR-i;
+    syscall : write;
+}
+
 
 == DEBUGGING TIPS ==
 • Error messages show the exact instruction that failed
-• Check variable names for invalid characters
+• Check variable names for invalid characters (especially numbers)
 • Ensure all variables are declared before use
 • Remember while loops require global variables only
 • Verify function names exist before calling them
-• Check that array indices don't exceed array bounds
+• Check pointer variables contain valid variable names
+• Array indices start at 0 and use underscore notation
+• Use sys-console for debugging output
 
 == COMMON PATTERNS ==
 Input/Output:
-    syscall : read;          # Get user input
-    # Process sys-console
-    syscall : write;         # Display output
+    sys-console = ""Your message here"";
+    syscall : write;         # Display message
+    syscall : read;          # Get user input (stored in sys-console)
 
 Number conversion:
-    STR-i = 'someString';
-    syscall : toNum;
-    # NUM-i now contains the numeric value
+    STR-i = sys-console;     # Put string in STR-i
+    syscall : toNum;         # Convert to number in NUM-i
+    myVariable = NUM-i;      # Store the number
+
+String conversion:
+    NUM-i = myNumber;        # Put number in NUM-i
+    syscall : toString;      # Convert to string in STR-i
+    sys-console = STR-i;     # Use the string
 
 Conditional execution:
     if condition == 1 : executeTrue | pass;  # Use 'pass' for no action
@@ -836,16 +1093,21 @@ Conditional execution:
 Loop with global counter:
     while globalCounter < 10 : loopBody;
 
+Dynamic variable access:
+    str varName = ""myVariable"";
+    num value = $varName;    # Read dynamically
+    $varName = newValue;     # Write dynamically
+
 == PROGRAM EXECUTION FLOW ==
-1. Parse and register all functions
-2. Execute 'global' function (if present) to initialize global variables
-3. Execute 'main' function to start program
-4. Functions call other functions as needed
-5. Program ends when main function completes
+1. Parse and register all functions from source file
+2. Initialize system variables (sys-console, STR-i, NUM-i, etc.)
+3. Execute 'global' function (if present) to initialize global variables
+4. Execute 'main' function to start program execution
+5. Functions call other functions as needed using call : functionName
+6. Program ends when main function completes successfully
 
 === END OF GUIDE ===
 ");
-
                 break;
             default:
                 CrashError("Invalid Syntax, system function does not exist", ["None"]);
@@ -976,6 +1238,7 @@ Loop with global counter:
         if (VarName.Contains(' ')) return false;
         if (VarName.Contains('?')) return false;
         if (VarName.Contains('$')) return false;
+        if (VarName.Contains('"')) return false;
         foreach (var ch in VarName)
             if (char.IsDigit(ch))
                 return false;
