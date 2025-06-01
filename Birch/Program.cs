@@ -6,12 +6,14 @@
     private static readonly Dictionary<string, string> GlobalStrings = new();
 
     private static readonly HashSet<string> validOps = new() { "<", ">", "<=", ">=", "==", "!=" };
+    private static string projectFolder = "";
+    static bool SingleFile = false;
 
     public static void Main(string[] args)
     {
         #region FileInput
 
-        var projectFolder = "";
+        
         if (args.Length == 0)
         {
             Console.WriteLine("Initiating Birch Terminal CommandLine");
@@ -28,7 +30,6 @@
         }
 
         var initFilePath = "";
-        var SingleFile = false;
 
         if (projectFolder.Contains(".br"))
         {
@@ -62,7 +63,48 @@
 
         #region Function Registration
 
-        IndexFile = IndexFile.Replace("\n", "")
+        ImportFileData(IndexFile);
+
+        // Console.WriteLine(FunctionLibrary.Count);
+        // Console.WriteLine(String.Join(", ", FunctionLibrary.Keys));
+
+        if (!FunctionLibrary.ContainsKey("main"))
+        {
+            Console.WriteLine("File does not contain a function named 'main'");
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
+            return;
+        }
+
+        #endregion
+
+        #region SystemSetup
+
+        GlobalStrings.Add("sys-console", "");
+
+        GlobalStrings.Add("STR-i", "");
+        GlobalStrings.Add("STR-x", "");
+        GlobalStrings.Add("STR-c", "");
+        GlobalStrings.Add("STR-l", "");
+
+        GlobalNumbers.Add("NUM-i", 0);
+        GlobalNumbers.Add("NUM-x", 0);
+        GlobalNumbers.Add("NUM-c", 0);
+        GlobalNumbers.Add("NUM-l", 0);
+
+        #endregion
+
+        // Console.WriteLine($"All functions registered in Birch Runtime : {String.Join(", ", FunctionLibrary.Keys)}" );
+        CallFunction("main");
+
+        Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
+        Console.ReadKey();
+    }
+
+
+    public static void ImportFileData(string fileData)
+    {
+        var IndexFile = fileData.Replace("\n", "")
             .Replace("\t", "")
             .Replace("\r", "")
             .Replace("    ", "")
@@ -120,43 +162,7 @@
                 }
             }
         }
-
-        // Console.WriteLine(FunctionLibrary.Count);
-        // Console.WriteLine(String.Join(", ", FunctionLibrary.Keys));
-
-        if (!FunctionLibrary.ContainsKey("main"))
-        {
-            Console.WriteLine("File does not contain a function named 'main'");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-            return;
-        }
-
-        #endregion
-
-        #region SystemSetup
-
-        GlobalStrings.Add("sys-console", "");
-
-        GlobalStrings.Add("STR-i", "");
-        GlobalStrings.Add("STR-x", "");
-        GlobalStrings.Add("STR-c", "");
-        GlobalStrings.Add("STR-l", "");
-
-        GlobalNumbers.Add("NUM-i", 0);
-        GlobalNumbers.Add("NUM-x", 0);
-        GlobalNumbers.Add("NUM-c", 0);
-        GlobalNumbers.Add("NUM-l", 0);
-
-        #endregion
-
-        // Console.WriteLine($"All functions registered in Birch Runtime : {String.Join(", ", FunctionLibrary.Keys)}" );
-        CallFunction("main");
-
-        Console.WriteLine("Code Execution Completed Successfully\nPress any key to exit...");
-        Console.ReadKey();
     }
-
 
     public static void RegisterFunction(string functionName, List<string> functionBlock)
     {
@@ -292,8 +298,31 @@
                             EvaluateStringExpression(Instruction.Skip(3).ToArray(), GlobalStrings, GlobalNumbers));
 
                     continue;
+                
+                case "import":
+                    if(Instruction is not ["import", ":", _]) CrashError("Invalid Syntax, incorrect import statement", Instruction);
+                    if (SingleFile)
+                    {
+                        Console.WriteLine(">> Runtime Initiated as a single file than a project");
+                        continue;
+                    }
+                    else
+                    {
+                        var LibName = Path.Combine(projectFolder, Instruction[2] + ".br");
+                        if (File.Exists(LibName))
+                        {
+                            ImportFileData(File.ReadAllText(LibName));
+                            continue;
+                        }
+                        else
+                        {
+                            Console.WriteLine($">> Runtime cannot find library {Instruction[2]}.br");
+                        }
+                    }
+                    continue;
             }
 
+            
             //Variable Re-assignment
             if (Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete", Instruction);
 
@@ -306,7 +335,7 @@
                 return;
             }
 
-// Handle pointer dereferencing for assignment in global scope
+            // Handle pointer dereferencing for assignment in global scope
             if (variable.StartsWith("$") && variable.Length > 1)
             {
                 var pointerVarName = variable.Substring(1);
@@ -475,6 +504,57 @@
             //Function Calling
             switch (Instruction[0])
             {
+                case "del":
+                    if(Instruction.Length != 2) CrashError("Invalid Syntax, not a valid delete statement", Instruction);
+                    var variableToDelete = Instruction[1];
+                    
+                    if (variableToDelete.StartsWith("$") && variableToDelete.Length > 1)
+                    {
+                        var pointerVarName = variableToDelete.Substring(1);
+                        var pointerAffirm = ConfirmStrVariable(pointerVarName, LocalStrings, LocalNumbers);
+
+                        if (!pointerAffirm.isvariable)
+                            CrashError("Invalid Syntax, Pointer variable does not exist", Instruction);
+                        
+                        var actualVariableName = pointerAffirm.varDict[pointerVarName].Replace("\"", "");
+                        
+                        var strAffirm = ConfirmStrVariable(actualVariableName, LocalStrings, LocalNumbers);
+                        var numAffirm = ConfirmNumVariable(actualVariableName, LocalNumbers, LocalStrings);
+
+                        if (strAffirm.isvariable)
+                        {
+                            strAffirm.varDict.Remove(actualVariableName);
+                        }
+                        else if (numAffirm.isvariable)
+                        {
+                            numAffirm.varDict.Remove(actualVariableName);
+                        }
+                        else
+                        {
+                            CrashError("Invalid Syntax, Pointer does not point to a valid variable", Instruction);
+                        }
+                    }
+                    else
+                    {
+                        // Original direct variable deletion logic
+                        var STRaffirm = ConfirmStrVariable(variableToDelete, LocalStrings, LocalNumbers);
+                        var NUMaffirm = ConfirmNumVariable(variableToDelete, LocalNumbers, LocalStrings);
+
+                        if (STRaffirm.isvariable)
+                        {
+                            STRaffirm.varDict.Remove(variableToDelete);
+                        }
+                        else if(NUMaffirm.isvariable)
+                        {
+                            NUMaffirm.varDict.Remove(variableToDelete);
+                        }
+                        else
+                        {
+                            CrashError("Invalid Syntax, variable does not exist", Instruction);
+                        }
+                    }
+    
+                    continue;
                 case "call":
                     if (Instruction.Length < 3 || Instruction.Length > 3)
                         CrashError("Invalid Syntax, invalid number of arguments", Instruction);
@@ -578,6 +658,7 @@
                     continue;
             }
 
+            
             //Variable Re-assignment
             if (Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete", Instruction);
 

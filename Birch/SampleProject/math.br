@@ -1,0 +1,11 @@
+﻿.global{
+    num MATH = 0;
+}
+
+.square{
+    MATH = MATH * MATH;
+}
+
+.cube{
+    MATH = MATH * MATH * MATH;
+}
