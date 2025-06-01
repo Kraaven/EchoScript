@@ -7,13 +7,12 @@
 
     private static readonly HashSet<string> validOps = new() { "<", ">", "<=", ">=", "==", "!=" };
     private static string projectFolder = "";
-    static bool SingleFile = false;
+    private static bool SingleFile;
 
     public static void Main(string[] args)
     {
         #region FileInput
 
-        
         if (args.Length == 0)
         {
             Console.WriteLine("Initiating Birch Terminal CommandLine");
@@ -298,31 +297,27 @@
                             EvaluateStringExpression(Instruction.Skip(3).ToArray(), GlobalStrings, GlobalNumbers));
 
                     continue;
-                
+
                 case "import":
-                    if(Instruction is not ["import", ":", _]) CrashError("Invalid Syntax, incorrect import statement", Instruction);
+                    if (Instruction is not ["import", ":", _])
+                        CrashError("Invalid Syntax, incorrect import statement", Instruction);
                     if (SingleFile)
                     {
                         Console.WriteLine(">> Runtime Initiated as a single file than a project");
-                        continue;
                     }
                     else
                     {
                         var LibName = Path.Combine(projectFolder, Instruction[2] + ".br");
                         if (File.Exists(LibName))
-                        {
                             ImportFileData(File.ReadAllText(LibName));
-                            continue;
-                        }
                         else
-                        {
                             Console.WriteLine($">> Runtime cannot find library {Instruction[2]}.br");
-                        }
                     }
+
                     continue;
             }
 
-            
+
             //Variable Re-assignment
             if (Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete", Instruction);
 
@@ -505,9 +500,10 @@
             switch (Instruction[0])
             {
                 case "del":
-                    if(Instruction.Length != 2) CrashError("Invalid Syntax, not a valid delete statement", Instruction);
+                    if (Instruction.Length != 2)
+                        CrashError("Invalid Syntax, not a valid delete statement", Instruction);
                     var variableToDelete = Instruction[1];
-                    
+
                     if (variableToDelete.StartsWith("$") && variableToDelete.Length > 1)
                     {
                         var pointerVarName = variableToDelete.Substring(1);
@@ -515,24 +511,18 @@
 
                         if (!pointerAffirm.isvariable)
                             CrashError("Invalid Syntax, Pointer variable does not exist", Instruction);
-                        
+
                         var actualVariableName = pointerAffirm.varDict[pointerVarName].Replace("\"", "");
-                        
+
                         var strAffirm = ConfirmStrVariable(actualVariableName, LocalStrings, LocalNumbers);
                         var numAffirm = ConfirmNumVariable(actualVariableName, LocalNumbers, LocalStrings);
 
                         if (strAffirm.isvariable)
-                        {
                             strAffirm.varDict.Remove(actualVariableName);
-                        }
                         else if (numAffirm.isvariable)
-                        {
                             numAffirm.varDict.Remove(actualVariableName);
-                        }
                         else
-                        {
                             CrashError("Invalid Syntax, Pointer does not point to a valid variable", Instruction);
-                        }
                     }
                     else
                     {
@@ -541,19 +531,13 @@
                         var NUMaffirm = ConfirmNumVariable(variableToDelete, LocalNumbers, LocalStrings);
 
                         if (STRaffirm.isvariable)
-                        {
                             STRaffirm.varDict.Remove(variableToDelete);
-                        }
-                        else if(NUMaffirm.isvariable)
-                        {
+                        else if (NUMaffirm.isvariable)
                             NUMaffirm.varDict.Remove(variableToDelete);
-                        }
                         else
-                        {
                             CrashError("Invalid Syntax, variable does not exist", Instruction);
-                        }
                     }
-    
+
                     continue;
                 case "call":
                     if (Instruction.Length < 3 || Instruction.Length > 3)
@@ -658,7 +642,7 @@
                     continue;
             }
 
-            
+
             //Variable Re-assignment
             if (Instruction.Length < 3) CrashError("Invalid Syntax, instruction is incomplete", Instruction);
 
@@ -860,7 +844,7 @@
 
             case "describe":
                 Console.WriteLine(@"
-=== BIRCH PROGRAMMING LANGUAGE GUIDE v2.0 ===
+=== BIRCH PROGRAMMING LANGUAGE GUIDE v2 ===
 
 == FILE STRUCTURE ==
 • Files use .br extension
@@ -921,6 +905,20 @@ Array declaration:
 Assignment (existing variables):
     variableName = newValue;
 
+Variable deletion:
+    del variableName;         # Remove variable from memory #
+    del $pointerVar;          # Delete via pointer reference #
+
+== PROJECT MANAGEMENT ==
+Library importing (use in global function):
+    import : libraryName;     # Imports libraryName.br from project folder #
+    
+Import rules:
+• Only works in project mode (not single files)  
+• Imported files must be in same directory as Index.br
+• Best practice: use import statements in global function
+• Runtime will display message if library file not found
+
 == EXPRESSIONS ==
 Mathematical: +, -, *, / with full parentheses support
     Example: num result = (x + y) * z / (a - b);
@@ -944,12 +942,12 @@ Pointer Examples:
     str targetName = ""myVariable"";  # Store variable name as string #
     num myVariable = 42;              # Create the target variable #
     num result = $targetName;         # result gets value of myVariable (42) #
-    $targetName = 100;                # **NEW: Sets myVariable to 100** #
+    $targetName = 100;                # Sets myVariable to 100 #
     
     # Array access via pointers #
     str arrayIndex = ""myArray_2"";   # Point to array element #
     num value = $arrayIndex;          # Access array element indirectly #
-    $arrayIndex = 999;                # Assign to array element** #
+    $arrayIndex = 999;                # Assign to array element #
 
 Advanced Pointer Usage:
     # Dynamic variable selection #
@@ -998,6 +996,10 @@ Regular function call:
 System function call:
     syscall : systemFunctionName;
 
+Variable deletion:
+    del variableName;         # Delete variable from current scope #
+    del $pointerVariable;     # Delete variable via pointer #
+
 Functions cannot return values directly - use global variables for data sharing.
 Use 'pass' as a function name to do nothing (useful in conditionals).
 
@@ -1006,7 +1008,7 @@ Use 'pass' as a function name to do nothing (useful in conditionals).
 • read      - Read user input into sys-console  
 • toNum     - Convert STR-i to NUM-i (string to number conversion)
 • toString  - Convert NUM-i to STR-i (number to string conversion)
-• random    - Use NUM-i and NUM-x as a range, and set NUM-i as a random  number
+• random    - Use NUM-i and NUM-x as a range, and set NUM-i as a random number
 • describe  - Display this help text
 
 == SYSTEM VARIABLES (RESERVED) ==
@@ -1051,6 +1053,8 @@ Array Example:
     str index = ""scores_1"";  # Point to second element #
     num currentScore = $index; # Get value (92) #
     $index = 95;               # Update second element #
+    
+    del $index;               # Delete the array element #
 
 == VARIABLE NAMING RULES ==
 • No dots (.), commas (,), spaces, or question marks (?)
@@ -1058,6 +1062,28 @@ Array Example:
 • No numeric characters allowed anywhere in the name
 • Case sensitive (myVar and MyVar are different)
 • Must not conflict with reserved keywords or system variables
+
+== MEMORY MANAGEMENT ==
+The del statement removes variables from memory:
+
+Basic deletion:
+    del variableName;         # Remove variable from current scope #
+
+Pointer-based deletion:
+    str target = ""myVar"";
+    num myVar = 100;
+    del $target;              # Deletes myVar #
+
+Array element deletion:
+    str elementName = ""array_5"";
+    del $elementName;         # Delete specific array element #
+
+Important notes:
+• Deleted variables cannot be accessed afterward
+• Attempting to use deleted variables causes runtime errors
+• Memory is freed immediately upon deletion
+• Works with both local and global variables
+• Pointer deletion affects the target variable, not the pointer itself
 
 == COMPLETE PROGRAM EXAMPLE ==
     
@@ -1081,10 +1107,11 @@ Array Example:
     while guess != secret : askGuess;
 
     call : successMessage;
+    call : cleanup;
 }
 
 .askRange{
-    sys-console = 'Enter the maximum number (must be > 1):';
+    sys-console = ""Enter the maximum number (must be > 1):"";
     syscall : write;
 
     syscall : read;
@@ -1096,19 +1123,20 @@ Array Example:
 }
 
 .rangeTooSmall{
-    sys-console = 'Invalid range. Please enter a number greater than 1.';
+    sys-console = ""Invalid range. Please enter a number greater than 1."";
     syscall : write;
     call : askRange;
 }
 
 .greet{
-
     NUM-i = max;
     syscall : toString;
     str MAXNUM = STR-i;
     
-    sys-console = 'Guess the secret number (between 0 and ' + MAXNUM + '): ';
+    sys-console = ""Guess the secret number (between 0 and "" + MAXNUM + ""): "";
     syscall : write;
+    
+    del MAXNUM;               # Clean up temporary variable #
 }
 
 .askGuess{
@@ -1124,17 +1152,17 @@ Array Example:
 }
 
 .tooLow{
-    sys-console = 'Too low! Try again:';
+    sys-console = ""Too low! Try again:"";
     syscall : write;
 }
 
 .tooHigh{
-    sys-console = 'Too high! Try again:';
+    sys-console = ""Too high! Try again:"";
     syscall : write;
 }
 
 .successMessage{
-    sys-console = 'Correct! Attempts: ';
+    sys-console = ""Correct! Attempts: "";
     syscall : write;
 
     NUM-i = attempts;
@@ -1143,6 +1171,12 @@ Array Example:
     syscall : write;
 }
 
+.cleanup{
+    del secret;
+    del guess;
+    del attempts;
+    del max;
+}
 
 == DEBUGGING TIPS ==
 • Error messages show the exact instruction that failed
@@ -1153,6 +1187,7 @@ Array Example:
 • Check pointer variables contain valid variable names
 • Array indices start at 0 and use underscore notation
 • Use sys-console for debugging output
+• Be careful with del - deleted variables cannot be recovered
 
 == COMMON PATTERNS ==
 Input/Output:
@@ -1181,13 +1216,25 @@ Dynamic variable access:
     num value = $varName;    # Read dynamically
     $varName = newValue;     # Write dynamically
 
+Memory cleanup:
+    del temporaryVariable;   # Free memory when done
+    del $pointerToVariable;  # Delete via pointer
+
+Project structure:
+    .global{
+        import : utilities;   # Import utilities.br
+        import : gameLogic;   # Import gameLogic.br
+        num sharedData = 0;
+    }
+
 == PROGRAM EXECUTION FLOW ==
-1. Parse and register all functions from source file
+1. Parse and register all functions from source file(s)
 2. Initialize system variables (sys-console, STR-i, NUM-i, etc.)
 3. Execute 'global' function (if present) to initialize global variables
 4. Execute 'main' function to start program execution
 5. Functions call other functions as needed using call : functionName
-6. Program ends when main function completes successfully
+6. Variables can be deleted during execution to free memory
+7. Program ends when main function completes successfully
 
 === END OF GUIDE ===
 ");
