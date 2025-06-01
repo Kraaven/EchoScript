@@ -28,6 +28,7 @@
     syscall : toNum;
     size = NUM-i;
     
+    # Array Creation #
     NUM-i = size;
     STR-i = "num";
     STR-x = "arr";
@@ -36,6 +37,7 @@
 
 .getElements{
     i = 0;
+    # Interating through the array #
     while i < size : inputElement;
 }
 
@@ -51,7 +53,7 @@
     STR-i = sys-console;
     syscall : toNum;
     
-    # Create dynamic array index string #
+    # Create dynamic array index string Pointer#
     NUM-i = i;
     syscall : toString;
     indexStr = "arr_" + STR-i;
