@@ -64,7 +64,7 @@ Run with: `birch hello.br`
 -   **Operating System**: Windows or Linux
 -   **Dependencies**: None - Birch is a standalone executable
 -   **Memory**: Minimal RAM requirements
--   **Storage**: Less than 10MB disk space
+-   **Storage**: About 70MB disk space
 
 ## Language Overview
 
