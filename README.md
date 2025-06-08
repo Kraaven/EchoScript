@@ -333,7 +333,7 @@ str textArray [10];     # Minimum size is 2 #
 
 ```
 
-Array of only specific size can be declared like this. A number must be in between "[]". If you want to create an array of unknown size, use a syscall instead
+Array can be decalared with a number, variable or pointer.
 
 ```
 STR-i = "num";
@@ -919,7 +919,7 @@ str myTexts [3];          # Creates myTexts_0 through myTexts_2 #
 
 ```
 
-**Runtime Syscall Method:**
+**Runtime Syscall Method: (Redundant)**
 
 ```birch
 STR-i = "num";           # Set array type #
@@ -928,6 +928,8 @@ NUM-i = 5;               # Set array size #
 syscall : arr;           # Create the array #
 
 ```
+
+UPDATE : Arrays can be created with numbers, varaibles and pointers. They are not restricted to numbers only anymore. The syscall : arr is redundant.
 
 ### Array Access
 
