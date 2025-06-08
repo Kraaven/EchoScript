@@ -1,0 +1,71 @@
+﻿
+.global{
+    num index = 0;
+    num size = -1;
+}
+
+.main{
+
+    sys-console = "What is the size of the array? ";
+    syscall : write;
+    syscall : read;
+    STR-i = sys-console;
+    syscall : toNum;
+    size = NUM-i;
+    
+    if size < 2 : deny | pass;
+    num ages [size];
+    
+    sys-console = "Give " + STR-i + " element values: ";
+    syscall : write;
+    
+    while index < size : request;
+    
+    call : PrintArray;
+}
+
+.deny{
+
+    sys-console = "The given array size " + STR-i + " is less than 2, so array was not created.";
+    syscall : write;
+}
+
+.request{
+
+    NUM-i = index;
+    syscall : toString;
+    str arrayIndexVar = "ages_" + STR-i;
+    
+    sys-console = "Number for Element " + STR-i + ": ";
+    syscall : write;
+    syscall : read; 
+    
+    STR-i = sys-console;
+    syscall : toNum;
+    $arrayIndexVar = NUM-i * NUM-i; 
+    
+    index = index + 1;
+}
+
+.PrintArray{
+    
+    index = 0;
+    
+    while index < size : printElement;
+}
+
+.printElement{
+    
+    NUM-i = index;
+    syscall : toString;
+    str indexNum = STR-i;
+    str ArrayIndexVar = "ages_" + indexNum;
+    
+    NUM-i = $ArrayIndexVar;
+    syscall : toString;
+    
+    sys-console = "Element " + indexNum + " contains => " + STR-i;
+    syscall : write;
+    
+    index = index + 1; 
+}
