@@ -1,0 +1,6 @@
+.main{
+    
+    str name = "kraaven";
+    sys-console = "Hello " + name;
+    syscall : write;
+}

@@ -1,0 +1,461 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Birch",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#function-definitions"
+		},
+		{
+			"include": "#import-statements"
+		},
+		{
+			"include": "#variable-declarations"
+		},
+		{
+			"include": "#array-declarations"
+		},
+		{
+			"include": "#control-flow"
+		},
+		{
+			"include": "#function-calls"
+		},
+		{
+			"include": "#syscalls"
+		},
+		{
+			"include": "#delete-statements"
+		},
+		{
+			"include": "#assignments"
+		},
+		{
+			"include": "#expressions"
+		},
+		{
+			"include": "#pointers"
+		},
+		{
+			"include": "#system-variables"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#operators"
+		},
+		{
+			"include": "#punctuation"
+		}
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.block.birch",
+					"begin": "#",
+					"end": "#",
+					"patterns": [
+						{
+							"name": "constant.character.escape.birch",
+							"match": "\\\\#"
+						}
+					]
+				}
+			]
+		},
+		"function-definitions": {
+			"patterns": [
+				{
+					"name": "meta.function.birch",
+					"begin": "\\.(global|main)(?=\\s*\\{)",
+					"beginCaptures": {
+						"0": {
+							"name": "entity.name.function.special.birch"
+						}
+					},
+					"end": "(?<=\\})",
+					"patterns": [
+						{
+							"include": "#function-body"
+						}
+					]
+				},
+				{
+					"name": "meta.function.birch",
+					"begin": "\\.([a-zA-Z_][a-zA-Z_]*)(?=\\s*\\{)",
+					"beginCaptures": {
+						"0": {
+							"name": "entity.name.function.birch"
+						},
+						"1": {
+							"name": "entity.name.function.birch"
+						}
+					},
+					"end": "(?<=\\})",
+					"patterns": [
+						{
+							"include": "#function-body"
+						}
+					]
+				}
+			]
+		},
+		"function-body": {
+			"patterns": [
+				{
+					"name": "punctuation.definition.block.begin.birch",
+					"match": "\\{"
+				},
+				{
+					"name": "punctuation.definition.block.end.birch",
+					"match": "\\}"
+				},
+				{
+					"include": "$self"
+				}
+			]
+		},
+		"import-statements": {
+			"patterns": [
+				{
+					"name": "meta.import.birch",
+					"match": "(import)\\s*(:)\\s*([a-zA-Z_][a-zA-Z_]*)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.import.birch"
+						},
+						"2": {
+							"name": "punctuation.separator.birch"
+						},
+						"3": {
+							"name": "entity.name.namespace.birch"
+						}
+					}
+				}
+			]
+		},
+		"variable-declarations": {
+			"patterns": [
+				{
+					"name": "meta.variable.declaration.birch",
+					"match": "\\b(num|str)\\s+([a-zA-Z_][a-zA-Z_]*)\\s*(=)",
+					"captures": {
+						"1": {
+							"name": "storage.type.birch"
+						},
+						"2": {
+							"name": "variable.other.birch"
+						},
+						"3": {
+							"name": "keyword.operator.assignment.birch"
+						}
+					}
+				}
+			]
+		},
+		"array-declarations": {
+			"patterns": [
+				{
+					"name": "meta.array.declaration.birch",
+					"match": "\\b(num|str)\\s+([a-zA-Z_][a-zA-Z_]*)\\s*(\\[)([0-9]+)(\\])",
+					"captures": {
+						"1": {
+							"name": "storage.type.birch"
+						},
+						"2": {
+							"name": "variable.other.array.birch"
+						},
+						"3": {
+							"name": "punctuation.definition.array.begin.birch"
+						},
+						"4": {
+							"name": "constant.numeric.integer.birch"
+						},
+						"5": {
+							"name": "punctuation.definition.array.end.birch"
+						}
+					}
+				}
+			]
+		},
+		"control-flow": {
+			"patterns": [
+				{
+					"name": "meta.if-statement.birch",
+					"match": "\\b(if)\\s+(.+?)\\s*(:)\\s*([a-zA-Z_][a-zA-Z_]*|pass)\\s*(\\|)\\s*([a-zA-Z_][a-zA-Z_]*|pass)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.conditional.birch"
+						},
+						"2": {
+							"patterns": [
+								{
+									"include": "#expressions"
+								}
+							]
+						},
+						"3": {
+							"name": "punctuation.separator.birch"
+						},
+						"4": {
+							"name": "entity.name.function.birch"
+						},
+						"5": {
+							"name": "keyword.operator.logical.birch"
+						},
+						"6": {
+							"name": "entity.name.function.birch"
+						}
+					}
+				},
+				{
+					"name": "meta.while-statement.birch",
+					"match": "\\b(while)\\s+(.+?)\\s*(:)\\s*([a-zA-Z_][a-zA-Z_]*)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.loop.birch"
+						},
+						"2": {
+							"patterns": [
+								{
+									"include": "#expressions"
+								}
+							]
+						},
+						"3": {
+							"name": "punctuation.separator.birch"
+						},
+						"4": {
+							"name": "entity.name.function.birch"
+						}
+					}
+				},
+				{
+					"name": "keyword.control.birch",
+					"match": "\\b(pass)\\b"
+				}
+			]
+		},
+		"function-calls": {
+			"patterns": [
+				{
+					"name": "meta.function-call.birch",
+					"match": "\\b(call)\\s*(:)\\s*([a-zA-Z_][a-zA-Z_]*)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.call.birch"
+						},
+						"2": {
+							"name": "punctuation.separator.birch"
+						},
+						"3": {
+							"name": "entity.name.function.birch"
+						}
+					}
+				}
+			]
+		},
+		"syscalls": {
+			"patterns": [
+				{
+					"name": "meta.syscall.birch",
+					"match": "\\b(syscall)\\s*(:)\\s*(write|read|toNum|toString|random|describe|arr)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.syscall.birch"
+						},
+						"2": {
+							"name": "punctuation.separator.birch"
+						},
+						"3": {
+							"name": "support.function.syscall.birch"
+						}
+					}
+				}
+			]
+		},
+		"delete-statements": {
+			"patterns": [
+				{
+					"name": "meta.delete.birch",
+					"match": "\\b(del)\\s+(\\$[a-zA-Z_][a-zA-Z_]*|[a-zA-Z_][a-zA-Z_]*)",
+					"captures": {
+						"1": {
+							"name": "keyword.control.delete.birch"
+						},
+						"2": {
+							"patterns": [
+								{
+									"include": "#pointers"
+								},
+								{
+									"include": "#variables"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		"assignments": {
+			"patterns": [
+				{
+					"name": "meta.assignment.birch",
+					"match": "([a-zA-Z_][a-zA-Z_]*|\\$[a-zA-Z_][a-zA-Z_]*)\\s*(=)\\s*",
+					"captures": {
+						"1": {
+							"patterns": [
+								{
+									"include": "#pointers"
+								},
+								{
+									"include": "#variables"
+								}
+							]
+						},
+						"2": {
+							"name": "keyword.operator.assignment.birch"
+						}
+					}
+				}
+			]
+		},
+		"expressions": {
+			"patterns": [
+				{
+					"include": "#pointers"
+				},
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#numbers"
+				},
+				
+				{
+					"include": "#system-variables"
+				},
+				{
+					"include": "#variables"
+				},
+				{
+					"include": "#operators"
+				},
+				{
+					"name": "meta.group.birch",
+					"begin": "\\(",
+					"end": "\\)",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.group.begin.birch"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.group.end.birch"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#expressions"
+						}
+					]
+				}
+			]
+		},
+		"pointers": {
+			"patterns": [
+				{
+					"name": "variable.other.pointer.birch",
+					"match": "\\$[a-zA-Z_][a-zA-Z_]*"
+				}
+			]
+		},
+		"system-variables": {
+			"patterns": [
+				{
+					"name": "variable.language.system.birch",
+					"match": "\\b(sys-console|STR-[ixcl]|NUM-[ixcl])\\b"
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.other.array-element.birch",
+					"match": "\\b[a-zA-Z_][a-zA-Z_]*_[0-9]+\\b"
+				},
+				{
+					"name": "variable.other.birch",
+					"match": "\\b[a-zA-Z_][a-zA-Z_]*\\b"
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"name": "keyword.operator.comparison.birch",
+					"match": "(==|!=|<=|>=|<|>)"
+				},
+				{
+					"name": "keyword.operator.arithmetic.birch",
+					"match": "(\\+|\\-|\\*|\\/)"
+				},
+				{
+					"name": "keyword.operator.logical.birch",
+					"match": "(\\|)"
+				}
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"name": "string.quoted.double.birch",
+					"begin": "\"",
+					"end": "\"",
+					"patterns": [
+						{
+							"name": "constant.character.escape.birch",
+							"match": "\\\\\"\""
+						}
+					]
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.float.birch",
+					"match": "\\b-?[0-9]*\\.[0-9]+\\b"
+				},
+				{
+					"name": "constant.numeric.integer.birch",
+					"match": "\\b-?[0-9]+\\b"
+				}
+			]
+		},
+		"punctuation": {
+			"patterns": [
+				{
+					"name": "punctuation.terminator.statement.birch",
+					"match": ";"
+				},
+				{
+					"name": "punctuation.separator.birch",
+					"match": ":"
+				}
+			]
+		}
+	},
+	"scopeName": "source.br"
+}
