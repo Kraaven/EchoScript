@@ -35,6 +35,7 @@ Get started with Birch in minutes:
 2.  **Extract**: Unzip the executable interpreter
 3.  **Create**: Write your first Birch program
 4.  **Run**: Execute using the Birch interpreter
+5.  **Optional**: Install the VsCode extension file also provided in the release page for convenient syntax highlighting
 
 ### Your First Program
 
