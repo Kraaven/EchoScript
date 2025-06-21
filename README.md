@@ -31,7 +31,7 @@ Birch is a unique, minimalist programming language designed for simplicity and e
 
 Get started with Birch in minutes:
 
-1.  **Download**: Get the latest release from the [releases page]()
+1.  **Download**: Get the latest release from the [releases page](https://github.com/Kraaven/ProjectBirch/releases)
 2.  **Extract**: Unzip the executable interpreter
 3.  **Create**: Write your first Birch program
 4.  **Run**: Execute using the Birch interpreter
@@ -55,10 +55,10 @@ Run with: `birch hello.br`
 
 ### Download and Setup
 
-1.  Navigate to the [releases page](https://claude.ai/releases)
-2.  Download the appropriate executable for your platform
-3.  Extract the archive to your desired location
-4.  Add the executable to your system PATH (optional but recommended)
+1.  Navigate to the [releases page](https://github.com/Kraaven/ProjectBirch/releases)
+2.  Download the appropriate executable interpreter for your platform
+3.  Download and install the VC-Code Extension
+4.  Write a test program and execute it via the command line or opening the executable
 
 ### System Requirements
 
